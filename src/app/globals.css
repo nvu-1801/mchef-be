@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* --- VIP Gold Button --- */
+.btn-vip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem .9rem;             /* ~ py-2 px-3 */
+  border-radius: .5rem;              /* rounded-md */
+  font-weight: 600;                  /* font-medium/bold */
+  color: #1a1205;                    /* chữ nâu đậm hợp với vàng */
+  border: 1px solid #d9a019;         /* viền vàng */
+  background: linear-gradient(135deg,
+    #fff7cc 0%,
+    #fbd674 18%,
+    #d8a73c 35%,
+    #b8841b 50%,
+    #e7c154 68%,
+    #ffeb9a 100%
+  );
+  box-shadow:
+    0 6px 18px rgba(184, 120, 7, .35),
+    inset 0 1px 0 rgba(255,255,255,.7),
+    inset 0 -1px 0 rgba(0,0,0,.15);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+/* highlight bóng kính */
+.btn-vip::before{
+  content:"";
+  position:absolute; inset: 2px 2px auto 2px; height: 42%;
+  border-radius: .45rem;
+  background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,0));
+  pointer-events:none;
+  filter: blur(.2px);
+}
+
+/* tia lấp lánh chạy ngang */
+.btn-vip::after{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    linear-gradient(125deg, rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.55) 45%, rgba(255,255,255,0) 60%);
+  mix-blend-mode: screen;
+  transform: translateX(-130%);
+  animation: shine 2s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes shine{
+  0%   { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+
+.btn-vip:hover{
+  filter: saturate(1.15) brightness(1.05);
+  box-shadow:
+    0 10px 24px rgba(184,120,7,.45),
+    inset 0 1px 0 rgba(255,255,255,.85),
+    inset 0 -1px 0 rgba(0,0,0,.18);
+  transform: translateY(-1px);
+}
+
+.btn-vip:active{ transform: translateY(0); }
+.btn-vip:focus-visible{ outline: 2px solid rgba(217,160,25,.6); outline-offset: 2px; }

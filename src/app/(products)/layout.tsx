@@ -11,10 +11,16 @@ export default async function ProductsGroupLayout({
   children: React.ReactNode;
 }) {
   const sb = await supabaseServer();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
 
+  const {
+    data: { session },
+    error,
+  } = await sb.auth.getSession();
+
+  const user = session?.user ?? null;
+  const accessToken = session?.access_token ?? null;
+
+  console.log("Access Token:", accessToken);
   // đọc role từ profiles
   let isAdmin = false;
   if (user) {

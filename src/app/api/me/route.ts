@@ -1,46 +1,56 @@
-// app/api/me/route.ts
+// app/api/profiles/me/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { z } from "zod";
 
-export async function GET() {
+const Body = z.object({
+  fullName: z.string().trim().min(1).max(120).optional(),
+  avatarUrl: z.string().url().optional().or(z.literal("")),
+  bio: z.string().max(2000).optional().or(z.literal("")),
+  skills: z.array(z.string().trim().min(1)).max(50).optional(),
+});
+
+export async function PUT(req: Request) {
   const sb = await supabaseServer();
-  const { data: { user }, error: authErr } = await sb.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (authErr) {
-    return NextResponse.json({ error: "Auth error", detail: authErr.message }, { status: 500 });
-  }
-  if (!user) {
-    // Public (không đăng nhập) vẫn gọi được: trả user=null, profile=null
-    return NextResponse.json({ user: null, profile: null });
+  const parsed = Body.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Bad payload", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { data: prof, error } = await sb
+  const { fullName, avatarUrl, bio, skills } = parsed.data;
+
+  // Map camelCase -> snake_case
+  const patch: Record<string, any> = {};
+  if (fullName !== undefined) patch.display_name = fullName;
+  if (avatarUrl !== undefined) patch.avatar_url = avatarUrl || null;
+  if (bio !== undefined) patch.bio = bio || null;
+  if (skills !== undefined) patch.skills = skills;
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ ok: true }); // không có gì để cập nhật
+  }
+
+  const { data, error } = await sb
     .from("profiles")
-    .select("id, email, display_name, avatar_url, bio, skills, role, cert_status, certificates, updated_at")
+    .update(patch)
     .eq("id", user.id)
-    .maybeSingle();
+    .select("id, email, display_name, avatar_url, bio, skills, role, updated_at")
+    .single();
 
-  if (error) {
-    // Có thể RLS chặn hoặc chưa có dòng profile -> trả user tối thiểu
-    return NextResponse.json({
-      user: { id: user.id, email: user.email },
-      profile: null,
-    });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
+  // Trả về theo camelCase cho FE
   return NextResponse.json({
-    user: { id: user.id, email: user.email },
-    profile: prof && {
-      id: prof.id,
-      email: prof.email,
-      fullName: prof.display_name ?? "",
-      avatarUrl: prof.avatar_url ?? "",
-      bio: prof.bio ?? "",
-      skills: Array.isArray(prof.skills) ? prof.skills : [],
-      role: prof.role ?? "user",
-      certStatus: prof.cert_status ?? null,
-      certificates: Array.isArray(prof.certificates) ? prof.certificates : [],
-      updatedAt: prof.updated_at ?? null,
-    },
+    id: data.id,
+    email: data.email,
+    fullName: data.display_name,
+    avatarUrl: data.avatar_url,
+    bio: data.bio,
+    skills: data.skills ?? [],
+    role: data.role,
+    updatedAt: data.updated_at,
   });
 }

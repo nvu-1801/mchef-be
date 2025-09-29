@@ -6,29 +6,31 @@ import { supabaseServer } from "@/libs/db/supabase/supabase-server";
 type Params = { params: { id: string } };
 
 const UpdateDish = z.object({
-  name: z.string().min(1).max(160).optional(),
+  title: z.string().min(1).max(160).optional(),
   slug: z.string().min(1).max(160).regex(/^[a-z0-9-]+$/).optional(),
-  description: z.string().max(5000).optional(),
-  images: z.array(z.string()).optional(),
-  category: z.string().max(120).optional(),
-  is_veg: z.boolean().optional(),
-  cook_time: z.number().int().min(0).max(10000).optional(),
+  cover_image_url: z.string().url().optional(),
+  category_id: z.string().uuid().optional(),
+  diet: z.string().max(30).optional(),               // đổi sang enum nếu DB dùng enum
+  time_minutes: z.number().int().min(0).max(100000).optional(),
+  servings: z.number().int().min(1).max(1000).optional(),
+  tips: z.string().max(5000).optional(),
+  published: z.boolean().optional(),
 });
 
-// UUID v4/v7 thoáng: chỉ cần 8-4-4-4-12 hex
+// UUID v4/v7
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(_req: Request, { params }: Params) {
   const identifier = params.id;
   const sb = await supabaseServer();
 
+  const byId = UUID_RE.test(identifier);
   const q = sb
     .from("dishes")
-    .select("id, name, slug, description, images, category, is_veg, cook_time, chef_id, created_at, updated_at")
-    [UUID_RE.test(identifier) ? "eq" : "eq"](
-      UUID_RE.test(identifier) ? "id" : "slug",
-      identifier
-    );
+    .select(
+      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at"
+    )
+    .eq(byId ? "id" : "slug", identifier);
 
   const { data, error } = await q.maybeSingle();
 
@@ -46,23 +48,22 @@ export async function PUT(req: Request, { params }: Params) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  // Tải dish trước để check quyền
+  const byId = UUID_RE.test(identifier);
+
+  // Lấy dish để kiểm quyền
   const { data: existed, error: fErr } = await sb
     .from("dishes")
-    .select("id, chef_id")
-    [UUID_RE.test(identifier) ? "eq" : "eq"](
-      UUID_RE.test(identifier) ? "id" : "slug",
-      identifier
-    )
+    .select("id, created_by")
+    .eq(byId ? "id" : "slug", identifier)
     .maybeSingle();
 
   if (fErr) return NextResponse.json({ error: "Fetch failed", detail: fErr.message }, { status: 500 });
   if (!existed) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Quyền: admin hoặc chủ sở hữu (chef_id)
+  // Quyền: admin hoặc chủ sở hữu (created_by)
   const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
   const isAdmin = prof?.role === "admin";
-  const isOwner = existed.chef_id && existed.chef_id === user.id;
+  const isOwner = existed.created_by === user.id;
   if (!isAdmin && !isOwner) return new NextResponse("Forbidden", { status: 403 });
 
   const json = await req.json().catch(() => ({}));
@@ -79,11 +80,10 @@ export async function PUT(req: Request, { params }: Params) {
   const { data, error } = await sb
     .from("dishes")
     .update(patch)
-    [UUID_RE.test(identifier) ? "eq" : "eq"](
-      UUID_RE.test(identifier) ? "id" : "slug",
-      identifier
+    .eq(byId ? "id" : "slug", identifier)
+    .select(
+      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at"
     )
-    .select("id, name, slug, description, images, category, is_veg, cook_time, chef_id, created_at, updated_at")
     .single();
 
   if (error) return NextResponse.json({ error: "Update failed", detail: error.message }, { status: 500 });
@@ -97,18 +97,14 @@ export async function DELETE(_req: Request, { params }: Params) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
-  // Chỉ admin được xoá (dễ kiểm soát). Muốn cho owner xoá thì lấy dish & so sánh chef_id.
+  const byId = UUID_RE.test(identifier);
+
+  // Chỉ admin được xoá (giữ nguyên theo yêu cầu). Nếu muốn cho owner xoá, lấy created_by và so sánh tương tự PUT.
   const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
   const isAdmin = prof?.role === "admin";
   if (!isAdmin) return new NextResponse("Forbidden", { status: 403 });
 
-  const { error } = await sb
-    .from("dishes")
-    .delete()
-    [UUID_RE.test(identifier) ? "eq" : "eq"](
-      UUID_RE.test(identifier) ? "id" : "slug",
-      identifier
-    );
+  const { error } = await sb.from("dishes").delete().eq(byId ? "id" : "slug", identifier);
 
   if (error) return NextResponse.json({ error: "Delete failed", detail: error.message }, { status: 500 });
   return new NextResponse(null, { status: 204 });

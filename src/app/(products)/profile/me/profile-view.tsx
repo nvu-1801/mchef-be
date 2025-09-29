@@ -1,4 +1,3 @@
-// app/profile/me/profile-view.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -7,64 +6,24 @@ import type { ProfileData } from "./types";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
-interface ApiMeSuccess {
-  user: { id: string; email: string | null };
-  profile: {
-    id: string;
-    email: string | null;
-    fullName: string | null;
-    avatarUrl: string | null;
-    bio: string | null;
-    skills: string[] | null;
-    role: string | null;
-    certStatus?: string | null;
-    certificates?: any[] | null;
-    updatedAt: string | null;
-  } | null;
-  _debug?: any;
-}
-
-interface ApiMeError {
-  error: string;
-}
-
-type ApiMeResponse = ApiMeSuccess | ApiMeError;
-
-function normalizeProfile(p: ApiMeResponse["profile"]): ProfileData {
-  // Nếu chưa có dòng profile trên DB, trả về skeleton tối thiểu
-  if (!p) {
-    return {
-      id: "",
-      email: "",
-      fullName: "",
-      avatarUrl: "",
-      bio: "",
-      skills: [],
-      role: "user",
-      certStatus: null,
-      certificates: [],
-      updatedAt: null,
-    };
-  }
-  return {
-    id: p.id,
-    email: p.email ?? "",
-    fullName: p.fullName ?? "",
-    avatarUrl: p.avatarUrl ?? "",
-    bio: p.bio ?? "",
-    skills: Array.isArray(p.skills) ? p.skills : [],
-    role: p.role ?? "user",
-    certStatus: p.certStatus ?? null,
-    certificates: p.certificates ?? [],
-    updatedAt: p.updatedAt ?? null,
-  };
-}
+// API /api/me TRẢ VỀ OBJECT PHẲNG
+type ApiMe = {
+  id: string;
+  email: string;
+  fullName: string;
+  avatarUrl: string;
+  bio: string;
+  skills: string[];
+  role: string;
+  certStatus: string | null;
+  certificates: any[];
+  createdAt: string | null;
+  updatedAt: string | null;
+};
 
 export default function ProfileView({ initial }: { initial: ProfileData }) {
-  // Dùng initial từ server ngay lập tức để tránh FOUC, sau đó refresh từ /api/me ở client
-  const [profile, setProfile] = useState<ProfileData>(
-    normalizeProfile(initial)
-  );
+  // Dùng initial từ server ngay để tránh FOUC
+  const [profile, setProfile] = useState<ProfileData>(initial);
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -85,23 +44,27 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
           const txt = await res.text();
           throw new Error(txt || `Fetch /api/me failed (${res.status})`);
         }
+        const data: ApiMe | { error: string } = await res.json();
 
-        const data: ApiMeResponse = await res.json();
+        // Nếu lỗi chuẩn {error: "..."}
+        if ("error" in data) throw new Error(data.error || "Unauthorized");
 
-        // ✅ Type guard: nếu có field "error" thì đây là ApiMeError
-        if ("error" in data) {
-          throw new Error(data.error || "Unauthorized");
-        }
+        if (!mounted) return;
 
-        // ✅ Đến đây TS biết chắc là ApiMeSuccess => có data.profile
-        if (mounted) {
-          const normalized = normalizeProfile(data.profile);
-          setProfile((prev) => ({
-            ...normalized,
-            email: normalized.email || prev.email || "",
-            role: normalized.role || prev.role || "user",
-          }));
-        }
+        // Map object phẳng từ API -> ProfileData
+        const next: ProfileData = {
+          id: data.id,
+          email: data.email ?? "",
+          fullName: data.fullName ?? "",
+          avatarUrl: data.avatarUrl ?? "",
+          bio: data.bio ?? "",
+          skills: Array.isArray(data.skills) ? data.skills : [],
+          role: data.role ?? "user",
+          certStatus: data.certStatus ?? null,
+          certificates: Array.isArray(data.certificates) ? data.certificates : [],
+          updatedAt: data.updatedAt ?? null,
+        };
+        setProfile(next);
       } catch (e: any) {
         if (mounted) setLoadErr(e?.message || "Cannot load profile");
       } finally {
@@ -113,14 +76,12 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
     };
   }, []);
 
-  // Label thời gian cập nhật: an toàn với invalid date string
   const updatedLabel = useMemo(() => {
     if (!profile.updatedAt) return "—";
     const t = new Date(profile.updatedAt);
     return Number.isNaN(t.getTime()) ? "—" : t.toLocaleString();
   }, [profile.updatedAt]);
 
-  // Toast helper
   function showToast(t: ToastState) {
     setToast(t);
     if (t) setTimeout(() => setToast(null), 2500);
@@ -140,7 +101,6 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
 
   return (
     <>
-      {/* Toast notification */}
       {toast && (
         <div
           className={`fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-lg px-4 py-2 shadow ${
@@ -153,24 +113,18 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
         </div>
       )}
 
-      {/* Loading / Error banner (nhẹ) */}
       {(loading || loadErr) && (
         <div className="mb-4 rounded-lg border px-4 py-2 text-sm">
-          {loading ? (
-            "Loading profile…"
-          ) : (
-            <span className="text-rose-600">Error: {loadErr}</span>
-          )}
+          {loading ? "Loading profile…" : <span className="text-rose-600">Error: {loadErr}</span>}
         </div>
       )}
 
-      {/* Profile Display (View Mode) */}
+      {/* Profile Display */}
       <div className="rounded-2xl border shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-emerald-500 p-[1px]">
           <div className="rounded-2xl bg-white/90 backdrop-blur">
             <div className="p-6">
               <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
-                {/* Avatar and Name */}
                 <div className="relative">
                   <img
                     src={avatarSrc}
@@ -210,13 +164,10 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                       {profile.email || "—"}
                     </button>
                     <span className="text-gray-400">•</span>
-                    <span className="text-gray-500">
-                      Updated: {updatedLabel}
-                    </span>
+                    <span className="text-gray-500">Updated: {updatedLabel}</span>
                   </div>
                 </div>
 
-                {/* Edit Profile Button */}
                 <div>
                   <button
                     type="button"
@@ -232,9 +183,8 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
         </div>
       </div>
 
-      {/* Profile Details Sections */}
+      {/* Sections */}
       <div className="grid gap-6 mt-6 md:grid-cols-2">
-        {/* General Section (Bio) */}
         <div className="rounded-2xl border bg-white shadow-sm">
           <div className="border-b px-5 py-3">
             <h2 className="text-sm font-semibold tracking-wide text-gray-700">
@@ -253,7 +203,6 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
           </div>
         </div>
 
-        {/* Skills Section */}
         <div className="rounded-2xl border bg-white shadow-sm">
           <div className="border-b px-5 py-3">
             <h2 className="text-sm font-semibold tracking-wide text-gray-700">
@@ -279,7 +228,6 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
         </div>
       </div>
 
-      {/* Account Section (Email, Role, Last Updated) */}
       <div className="mt-6 rounded-2xl border bg-white shadow-sm">
         <div className="border-b px-5 py-3">
           <h2 className="text-sm font-semibold tracking-wide text-gray-700">
@@ -331,12 +279,10 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-4xl mx-auto px-4">
             <div className="bg-white rounded-2xl shadow-lg overflow-auto max-h-[90vh] p-6 relative">
-              {/* Close Modal Button */}
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -354,11 +300,10 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                 </svg>
               </button>
 
-              {/* ProfileForm: khi submit xong sẽ cập nhật lại state ở đây */}
               <ProfileForm
                 initial={profile}
                 onProfileUpdated={(updatedProfile) => {
-                  setProfile(updatedProfile); // đã được chuẩn hoá trong form
+                  setProfile(updatedProfile);
                 }}
               />
             </div>

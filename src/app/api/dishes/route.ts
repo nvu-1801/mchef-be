@@ -40,13 +40,31 @@ export async function GET(request: Request) {
 
   const sb = await supabaseServer();
 
-  let query = sb
-    .from("dishes")
-    .select(
-      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at",
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false });
+let query = sb
+  .from("dishes")
+  .select(
+    `
+    id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+    created_by, published, created_at, updated_at,
+    category:category_id ( id, slug, name, icon ),
+    dish_images ( id, image_url, alt, sort ),
+    recipe_steps ( step_no, content, image_url ),
+    dish_ingredients (
+      amount, note,
+      ingredient:ingredient_id ( id, name, unit )
+    ),
+    ratings ( user_id, stars, comment, created_at ),
+    favorites ( user_id ),
+    creator:created_by ( id, display_name, avatar_url )
+    `,
+    { count: "exact" }
+  )
+  .order("created_at", { ascending: false })
+  .order("sort", { foreignTable: "dish_images", ascending: true })
+  .order("step_no", { foreignTable: "recipe_steps", ascending: true })
+  // nếu lỗi ở dòng dưới (vì foreign table lồng 2 cấp), hãy bỏ hoặc đổi sang 'ingredient'
+  .order("name", { foreignTable: "dish_ingredients.ingredient", ascending: true })
+  .order("created_at", { foreignTable: "ratings", ascending: false });
 
   if (q) query = query.ilike("title", `%${q}%`);
   if (category_id) query = query.eq("category_id", category_id);

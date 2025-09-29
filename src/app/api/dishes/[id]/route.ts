@@ -7,10 +7,15 @@ type Params = { params: { id: string } };
 
 const UpdateDish = z.object({
   title: z.string().min(1).max(160).optional(),
-  slug: z.string().min(1).max(160).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(160)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
   cover_image_url: z.string().url().optional(),
   category_id: z.string().uuid().optional(),
-  diet: z.string().max(30).optional(),               // đổi sang enum nếu DB dùng enum
+  diet: z.string().max(30).optional(), // đổi sang enum nếu DB dùng enum
   time_minutes: z.number().int().min(0).max(100000).optional(),
   servings: z.number().int().min(1).max(1000).optional(),
   tips: z.string().max(5000).optional(),
@@ -18,7 +23,8 @@ const UpdateDish = z.object({
 });
 
 // UUID v4/v7
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(_req: Request, { params }: Params) {
   const identifier = params.id;
@@ -28,14 +34,40 @@ export async function GET(_req: Request, { params }: Params) {
   const q = sb
     .from("dishes")
     .select(
-      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at"
+      `
+    id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+    created_by, published, created_at, updated_at,
+
+    category:category_id ( id, slug, name, icon ),
+
+    dish_images ( id, image_url, alt, sort ),
+
+    recipe_steps ( step_no, content, image_url ),
+
+    dish_ingredients (
+      amount, note,
+      ingredient:ingredient_id ( id, name, unit )
+    ),
+
+    ratings ( user_id, stars, comment, created_at ),
+
+    favorites ( user_id ),
+
+    creator:created_by ( id, display_name, avatar_url )
+    `
     )
-    .eq(byId ? "id" : "slug", identifier);
+    .eq(byId ? "id" : "slug", identifier)
+    .order("sort", { foreignTable: "dish_images", ascending: true })
+    .order("step_no", { foreignTable: "recipe_steps", ascending: true })
+    .order("created_at", { foreignTable: "ratings", ascending: false });
 
   const { data, error } = await q.maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: "Fetch failed", detail: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fetch failed", detail: error.message },
+      { status: 500 }
+    );
   }
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -45,7 +77,9 @@ export async function GET(_req: Request, { params }: Params) {
 export async function PUT(req: Request, { params }: Params) {
   const identifier = params.id;
   const sb = await supabaseServer();
-  const { data: { user } } = await sb.auth.getUser();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
   const byId = UUID_RE.test(identifier);
@@ -57,19 +91,32 @@ export async function PUT(req: Request, { params }: Params) {
     .eq(byId ? "id" : "slug", identifier)
     .maybeSingle();
 
-  if (fErr) return NextResponse.json({ error: "Fetch failed", detail: fErr.message }, { status: 500 });
-  if (!existed) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (fErr)
+    return NextResponse.json(
+      { error: "Fetch failed", detail: fErr.message },
+      { status: 500 }
+    );
+  if (!existed)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Quyền: admin hoặc chủ sở hữu (created_by)
-  const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const { data: prof } = await sb
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
   const isAdmin = prof?.role === "admin";
   const isOwner = existed.created_by === user.id;
-  if (!isAdmin && !isOwner) return new NextResponse("Forbidden", { status: 403 });
+  if (!isAdmin && !isOwner)
+    return new NextResponse("Forbidden", { status: 403 });
 
   const json = await req.json().catch(() => ({}));
   const parsed = UpdateDish.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body", issues: parsed.error.format() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid body", issues: parsed.error.format() },
+      { status: 400 }
+    );
   }
 
   const patch = {
@@ -86,7 +133,11 @@ export async function PUT(req: Request, { params }: Params) {
     )
     .single();
 
-  if (error) return NextResponse.json({ error: "Update failed", detail: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json(
+      { error: "Update failed", detail: error.message },
+      { status: 500 }
+    );
 
   return NextResponse.json(data);
 }
@@ -94,18 +145,31 @@ export async function PUT(req: Request, { params }: Params) {
 export async function DELETE(_req: Request, { params }: Params) {
   const identifier = params.id;
   const sb = await supabaseServer();
-  const { data: { user } } = await sb.auth.getUser();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
   if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
   const byId = UUID_RE.test(identifier);
 
   // Chỉ admin được xoá (giữ nguyên theo yêu cầu). Nếu muốn cho owner xoá, lấy created_by và so sánh tương tự PUT.
-  const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const { data: prof } = await sb
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
   const isAdmin = prof?.role === "admin";
   if (!isAdmin) return new NextResponse("Forbidden", { status: 403 });
 
-  const { error } = await sb.from("dishes").delete().eq(byId ? "id" : "slug", identifier);
+  const { error } = await sb
+    .from("dishes")
+    .delete()
+    .eq(byId ? "id" : "slug", identifier);
 
-  if (error) return NextResponse.json({ error: "Delete failed", detail: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json(
+      { error: "Delete failed", detail: error.message },
+      { status: 500 }
+    );
   return new NextResponse(null, { status: 204 });
 }

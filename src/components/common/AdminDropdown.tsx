@@ -50,6 +50,14 @@ export default function AdminDropdown({ isAdmin }: { isAdmin: boolean }) {
           Dashboard
         </Link>
       </li>
+        <li>
+        <Link
+          href="/admin/chefs"
+          className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+        >
+          Chef Profiles
+        </Link>
+      </li>
     </ul>
   </div>
 )}

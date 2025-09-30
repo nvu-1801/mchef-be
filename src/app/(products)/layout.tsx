@@ -52,10 +52,10 @@ export default async function ProductsGroupLayout({
                   className="leading-tight shrink-0 px-3 py-2 rounded-xl transition group hover:bg-gray-50"
                 >
                   <div className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 via-violet-600 to-sky-600 group-hover:from-fuchsia-500 group-hover:to-sky-500">
-                    Run Gear
+                    Master Chef
                   </div>
                   <div className="text-xs text-gray-500 group-hover:text-sky-600 transition">
-                    Phong cách & cá tính
+                    Sức khoẻ là vàng
                   </div>
                 </Link>
 

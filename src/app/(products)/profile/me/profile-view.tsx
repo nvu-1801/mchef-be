@@ -34,7 +34,6 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
 
   // ---- MODAL UPGRADE CERTIFICATE (MỚI) ----
   const [showCertModal, setShowCertModal] = useState(false);
-  const [certTab, setCertTab] = useState<"file" | "link">("file");
   const [certFiles, setCertFiles] = useState<File[]>([]);
   const [certLink, setCertLink] = useState("");
   const [certSubmitting, setCertSubmitting] = useState(false);

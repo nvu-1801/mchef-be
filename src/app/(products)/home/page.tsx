@@ -124,7 +124,7 @@ export default async function HomePage({
                   />
                   {/* viền sáng + overlay gradient để card bắt mắt */}
                   <div
-                    className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-tr ${gradient} mix-blend-multiply`}
+                    className={`pointer-events-none absolute inset-0 opacity-0 transition-opacity bg-gradient-to-tr ${gradient} mix-blend-multiply`}
                   />
                   <div className="pointer-events-none absolute inset-0 ring-1 ring-black/5 rounded-2xl" />
                   {/* chip thời gian/phần ăn */}

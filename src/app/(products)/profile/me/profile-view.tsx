@@ -13,10 +13,10 @@ type ApiMe = {
   email: string;
   fullName: string;
   avatarUrl: string;
-  bio: string;
+  bio: string | null;
   skills: string[];
   role: string;
-  certStatus: string | null;
+  certStatus: "none" | "pending" | "verified" | "rejected" | null;
   certificates: any[];
   createdAt: string | null;
   updatedAt: string | null;
@@ -94,9 +94,13 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
     if (t) setTimeout(() => setToast(null), 2500);
   }
 
-  function copyEmail() {
-    navigator.clipboard.writeText(profile.email || "");
-    showToast({ type: "success", msg: "Email copied" });
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(profile.email || "");
+      showToast({ type: "success", msg: "Email copied" });
+    } catch {
+      showToast({ type: "error", msg: "Cannot access clipboard" });
+    }
   }
 
   const avatarSrc =
@@ -185,7 +189,12 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
       const { uploadUrl, publicUrl } = await signRes.json();
 
       // PUT file lên storage
-      const putRes = await fetch(uploadUrl, { method: "PUT", body: f });
+      const putRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": f.type || "application/octet-stream" },
+        body: f,
+      });
+
       if (!putRes.ok) {
         const txt = await putRes.text();
         throw new Error(txt || "Upload file failed");
@@ -452,13 +461,20 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
 
       {/* Modal: Edit Profile */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-4xl mx-auto px-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowEditModal(false)} // click nền ngoài sẽ đóng
+        >
+          <div
+            className="relative w-full max-w-4xl mx-auto px-4"
+            onClick={(e) => e.stopPropagation()} // chặn propagation để không đóng khi click bên trong
+          >
             <div className="bg-white rounded-2xl shadow-lg overflow-auto max-h-[90vh] p-6 relative">
+              {/* Nút Close góc phải */}
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="absolute right-4 top-4 rounded-md bg-gray-100 p-2 text-gray-600 hover:bg-gray-200"
+                className="absolute right-1 top-1 z-10 rounded-full bg-gray-100 p-1 text-gray-600 hover:bg-gray-200"
                 title="Close"
               >
                 <svg
@@ -472,6 +488,7 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                 </svg>
               </button>
 
+              {/* Nội dung form */}
               <ProfileForm
                 initial={profile}
                 onProfileUpdated={(updatedProfile) => {

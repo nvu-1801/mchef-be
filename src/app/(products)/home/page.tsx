@@ -81,7 +81,7 @@ export default async function HomePage({
       </div>
 
       {/* ===== Layout 2 cột: TOC trái + nội dung phải ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-[16rem_1fr] gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[18%_82%] gap-6">
         {/* Sidebar TOC (sticky) */}
         <SideToc
           items={[

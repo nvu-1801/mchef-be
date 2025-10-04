@@ -21,16 +21,7 @@ function fakeRatingFromId(id: string) {
   const steps = [3.5, 4, 4.5, 5];
   return steps[hashStr(id) % steps.length];
 }
-function gradientFromId(id: string) {
-  const palettes = [
-    "from-pink-500 via-fuchsia-500 to-indigo-500",
-    "from-amber-400 via-orange-500 to-rose-500",
-    "from-emerald-400 via-teal-500 to-sky-500",
-    "from-violet-500 via-purple-500 to-blue-500",
-    "from-cyan-400 via-blue-500 to-indigo-600",
-  ];
-  return palettes[hashStr(id) % palettes.length];
-}
+
 function RatingStars({ rating }: { rating: number }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
@@ -81,7 +72,6 @@ export default function DishGrid({
       {dishes.map((d) => {
         const idKey = (d.id ?? d.slug ?? d.title) as string;
         const rating = fakeRatingFromId(idKey);
-        const gradient = gradientFromId(idKey);
         const img = dishImageUrl(d) ?? "/placeholder.png";
         const href = hrefBuilder ? hrefBuilder(d) : `/home/${d.slug}`;
 
@@ -98,7 +88,7 @@ export default function DishGrid({
                 />
                 {/* FIX: overlay hiển thị khi hover */}
                 <div
-                  className={`pointer-events-none absolute inset-0 opacity-0  transition-opacity bg-gradient-to-tr ${gradient} mix-blend-multiply`}
+                  className={`pointer-events-none absolute inset-0 opacity-0  transition-opacity bg-gradient-to-tr mix-blend-multiply`}
                 />
                 <div className="pointer-events-none absolute inset-0 ring-1 ring-black/5 rounded-2xl" />
                 <div className="absolute left-2 top-2 flex items-center gap-2">

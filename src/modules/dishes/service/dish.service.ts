@@ -94,30 +94,48 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
  * - cat: "all" hoặc slug của category
  * - Chỉ lấy published: true
  * - Tạm order theo title (nếu muốn theo thời gian, thêm created_at trong schema & select)
- */
-export async function listDishes({
+ */export async function listDishes({
   q = "",
   cat = "all",
-}: { q?: string; cat?: CatKey } = {}) {
+  page = 1,
+  pageSize = 12,
+}: { q?: string; cat?: CatKey; page?: number; pageSize?: number } = {}) {
   const sb = await supabaseServer();
   const usingFilter = !!cat && cat !== "all";
 
+  // đảm bảo page hợp lệ
+  const _page = Math.max(1, Number(page) || 1);
+  const _size = Math.max(1, Number(pageSize) || 12);
+  const from = (_page - 1) * _size;
+  const to = from + _size - 1;
+
   let qy = sb
     .from("dishes")
-    .select(usingFilter ? DISH_SELECT_WITH_FILTER : DISH_SELECT_DEFAULT)
+    // lấy cả count để tính tổng trang
+    .select(usingFilter ? DISH_SELECT_WITH_FILTER : DISH_SELECT_DEFAULT, { count: "exact" })
     .eq("published", true)
     .order("title", { ascending: true });
 
   if (q) qy = qy.ilike("title", `%${q}%`);
-  if (usingFilter) qy = qy.eq("categories.slug", cat);
+  if (usingFilter) qy = qy.eq("categories.slug", cat); // giữ nguyên cách filter theo slug của bạn
 
-  const { data, error } = await qy;
+  // phân trang với range (to là chỉ số *inclusive*)
+  qy = qy.range(from, to);
+
+  const { data, count, error } = await qy;
   if (error) {
     console.error("[listDishes]", error);
     throw new Error(error.message);
   }
-  return (data ?? []) as Dish[];
+
+  return {
+    items: (data ?? []) as Dish[],
+    total: count ?? 0,
+    page: _page,
+    pageSize: _size,
+  };
 }
+
 
 /** Lấy 1 món theo slug (published) */
 export async function getDishBySlug(slug: string) {

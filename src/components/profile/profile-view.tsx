@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import ProfileForm from "./profile-form";
-import type { ProfileData } from "./types";
-import CertificateModal from "../../../../components/profile/CertificateModal";
+import type { ProfileData } from "../../app/(products)/profile/me/types";
+import CertificateModal from "./CertificateModal";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 

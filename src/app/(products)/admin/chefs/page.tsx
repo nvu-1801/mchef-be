@@ -1,19 +1,22 @@
 // app/chefs/page.tsx
 import { supabaseServer } from "@/libs/db/supabase/supabase-server";
-import PublicChefs from "./applicants/PublicChefs";
+import PublicChefs from "../../../../components/chef/PublicChefs";
 
 export const revalidate = 60;
 
 export default async function ChefsPublicPage() {
   const sb = await supabaseServer();
 
-  // Nếu bạn có view `chefs_public`, thay .from("chefs") => .from("chefs_public").select("*")
+  // Ưu tiên dùng VIEW đã gộp số liệu
   const { data, error } = await sb
-    .from("chefs")
-    .select(`
-      id, user_id, display_name, avatar_url, bio, can_post, is_active, verified_at, created_at, updated_at,
-      user:profiles!chefs_user_id_fkey ( id, display_name, avatar_url )
-    `)
+    .from("chef_overview") // nếu chưa có view, tạm đổi thành "chefs"
+    .select(
+      `
+      id, user_id, display_name, avatar_url, bio,
+      is_active, can_post, verified_at, created_at, updated_at,
+      rating_avg, rating_count, dishes_count, comments_count
+    `
+    )
     .eq("is_active", true)
     .order("verified_at", { ascending: false });
 

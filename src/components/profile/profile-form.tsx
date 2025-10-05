@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import type { ProfileData } from "./types";
+import type { ProfileData } from "../../app/(products)/profile/me/types";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 

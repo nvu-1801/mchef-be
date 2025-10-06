@@ -1,7 +1,7 @@
 // src/modules/dishes/service/dish.service.ts
 import "server-only";
 import { supabaseServer } from "@/libs/db/supabase/supabase-server";
-import type { Dish } from "../dish-public";
+import type { Dish, DishFull } from "../dish-public";
 
 /* =========================
  * 1) CONSTANTS & UTILITIES
@@ -134,6 +134,48 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
     page: _page,
     pageSize: _size,
   };
+}
+
+
+/** Lấy 1 món FULL theo slug (published) */
+export async function getDishFullBySlug(slug: string) {
+  const sb = await supabaseServer();
+  const { data, error } = await sb
+    .from("dishes")
+    .select(
+      `
+      id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+      created_by, published, created_at, updated_at,
+
+      category:category_id ( id, slug, name, icon ),
+
+      dish_images ( id, image_url, alt, sort ),
+
+      recipe_steps ( step_no, content, image_url ),
+
+      dish_ingredients (
+        amount, note,
+        ingredient:ingredient_id ( id, name, unit )
+      ),
+
+      ratings ( user_id, stars, comment, created_at ),
+
+      favorites ( user_id ),
+
+      creator:created_by ( id, display_name, avatar_url )
+      `
+    )
+    .eq("slug", slug)
+    .eq("published", true)
+    .order("sort", { foreignTable: "dish_images", ascending: true })
+    .order("step_no", { foreignTable: "recipe_steps", ascending: true })
+    .order("created_at", { foreignTable: "ratings", ascending: false })
+    .maybeSingle<DishFull>();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("NOT_FOUND");
+
+  return data;
 }
 
 

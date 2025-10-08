@@ -1,20 +1,37 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function GlobalLoading() {
   const pathname = usePathname();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+
+  const start = () => {
+    // clear timeout cũ
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setLoading(true);
+    // Safety: auto tắt sau 10s nếu vì lý do gì đó không đổi pathname
+    timeoutRef.current = window.setTimeout(() => setLoading(false), 3000);
+  };
+
+  const done = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const start = () => setLoading(true);
-    const done = () => setLoading(false);
-
-    // 1) Bắt mọi click vào <a> nội bộ (Link cũng render thành <a>)
+    // Bắt click vào <a> nội bộ
     const onDocClick = (e: MouseEvent) => {
-      // bỏ qua nếu dùng Ctrl/Cmd/Shift/Alt, hoặc middle-click
-      if ((e as any).metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as any).button === 1) return;
+      if (
+        (e as any).metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey ||
+        (e as any).button === 1
+      )
+        return;
 
       const el = e.target as Element | null;
       const a = el?.closest?.("a");
@@ -24,16 +41,14 @@ export function GlobalLoading() {
       const target = a.getAttribute("target");
       if (!href || href.startsWith("#") || target === "_blank") return;
 
-      // chỉ bật khi là điều hướng nội bộ (same-origin)
       const url = new URL(href, window.location.href);
-      if (url.origin !== window.location.origin) return;
-
+      if (url.origin !== window.location.origin) return; // external
       start();
     };
 
     document.addEventListener("click", onDocClick, { capture: true });
 
-    // 2) Patch router.push/replace cho các nơi bạn gọi bằng code
+    // Patch push/replace để bật loading khi điều hướng bằng code
     const origPush = router.push;
     router.push = ((...args: any) => {
       start();
@@ -46,14 +61,38 @@ export function GlobalLoading() {
       return origReplace.apply(router, args);
     }) as typeof router.replace;
 
-    // 3) Khi pathname thay đổi => điều hướng đã xong
+    // Khi user dùng back/forward
+    const onPopState = () => start();
+    window.addEventListener("popstate", onPopState);
+
+    // Khi tab ẩn/hiện lại
+    const onVis = () => {
+      if (document.visibilityState === "visible") done();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    // Lần mount đầu không hiển thị overlay
     done();
 
     return () => {
-      document.removeEventListener("click", onDocClick, { capture: true } as any);
-      // không cần restore router.* vì component sống suốt vòng đời app
+      document.removeEventListener("click", onDocClick, {
+        capture: true,
+      } as any);
+      window.removeEventListener("popstate", onPopState);
+      document.removeEventListener("visibilitychange", onVis);
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     };
-  }, [router, pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 🔑 TẮT loading bất cứ khi nào pathname đổi (điều hướng xong)
+  useEffect(() => {
+    if (loading) {
+      // chờ 1 frame cho UI ổn định rồi tắt (mượt hơn)
+      const id = requestAnimationFrame(() => setLoading(false));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [pathname]); // <-- quan trọng
 
   if (!loading) return null;
 

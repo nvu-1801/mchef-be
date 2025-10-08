@@ -1,25 +1,24 @@
-// app/admin/chefs/applicants/page.tsx
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import Link from "next/link";
-import ApplicantsList from "./ApplicantsList";
+import ApplicantsList from "../../../../../components/chef/ApplicantsList";
 
 export const revalidate = 0;
 
 export default async function ChefApplicantsPage() {
   const sb = await supabaseServer();
 
-  // Lấy danh sách ứng viên: profiles.cert_status = 'pending'
   const { data: rows, error } = await sb
     .from("profiles")
-    .select(`
+    .select(
+      `
       id, email, display_name, avatar_url, bio, skills,
       cert_status, certificates, created_at, updated_at
-    `)
+    `
+    )
     .eq("cert_status", "pending")
     .order("updated_at", { ascending: false });
 
   if (error) {
-    // UI nhẹ khi lỗi
     return (
       <div className="mx-auto max-w-6xl p-6">
         <h1 className="text-2xl font-semibold">Chef Applicants</h1>

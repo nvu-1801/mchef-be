@@ -1,90 +1,63 @@
+// app/home/page.tsx
 import Link from "next/link";
 import {
   listDishes,
-  dishImageUrl,
   listCategories,
 } from "@/modules/dishes/service/dish.service";
+import VegDishesSection from "@/components/dishes/veg-dishes";
+import DishGrid from "@/components/dishes/dish-grid";
+import SideToc from "@/components/common/side-toc";
 
 export const revalidate = 60;
 
-type Search = { q?: string; cat?: string };
-
-// ===== Helpers (server-safe, không cần "use client") =====
-function hashStr(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h >>> 0;
-}
-function fakeRatingFromId(id: string) {
-  const steps = [3.5, 4, 4.5, 5]; // đủ “đẹp”
-  return steps[hashStr(id) % steps.length];
-}
-function gradientFromId(id: string) {
-  const palettes = [
-    "from-pink-500 via-fuchsia-500 to-indigo-500",
-    "from-amber-400 via-orange-500 to-rose-500",
-    "from-emerald-400 via-teal-500 to-sky-500",
-    "from-violet-500 via-purple-500 to-blue-500",
-    "from-cyan-400 via-blue-500 to-indigo-600",
-  ];
-  return palettes[hashStr(id) % palettes.length];
-}
-function RatingStars({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  const half = rating - full >= 0.5;
-  return (
-    <div className="flex items-center gap-1" aria-label={`Rating ${rating.toFixed(1)} / 5`}>
-      {[0, 1, 2, 3, 4].map((i) => {
-        const isFull = i < full;
-        const isHalf = i === full && half;
-        return (
-          <span key={i} className="relative inline-block h-4 w-4">
-            {/* outline */}
-            <svg viewBox="0 0 24 24" className="absolute inset-0" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
-            </svg>
-            {/* fill */}
-            <svg
-              viewBox="0 0 24 24"
-              className="absolute inset-0"
-              style={isHalf ? { clipPath: "inset(0 50% 0 0)" } : undefined}
-              fill="currentColor"
-            >
-              {(isFull || isHalf) && (
-                <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
-              )}
-            </svg>
-          </span>
-        );
-      })}
-      <span className="ml-1 text-xs font-medium text-gray-700">{rating.toFixed(1)}</span>
-    </div>
-  );
-}
+type Search = { q?: string; cat?: string; page?: string; vegPage?: string };
 
 export default async function HomePage({
   searchParams,
 }: {
-  // Next 15: searchParams là Promise
   searchParams: Promise<Search>;
 }) {
-  const { q = "", cat = "all" } = await searchParams;
+  const { q = "", cat = "all", page: pageStr = "1", vegPage = "1" } = await searchParams;
+  const page = Math.max(1, Number(pageStr) || 1);
+  const PAGE_SIZE = 12; // 6 cột * 2 hàng ở xl
 
   const cats = await listCategories();
-  const dishes = await listDishes({ q, cat });
+  const { items: dishItems, total } = await listDishes({
+    q,
+    cat,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  const totalPages = Math.max(1, Math.ceil((total ?? 0) / PAGE_SIZE));
+
+  const makeQuery = (
+    overrides: Record<string, string | number | undefined> = {}
+  ) => {
+    const query: Record<string, string> = {};
+    if (q) query.q = q;
+    if (cat && cat !== "all") query.cat = cat;
+    if (overrides.page !== undefined) query.page = String(overrides.page);
+    return query;
+  };
 
   const Tab = (label: string, key: string) => {
     const isActive = (cat || "all") === key;
-    const query: Record<string, string> = {};
-    if (q) query.q = q;
-    if (key !== "all") query.cat = key;
-
     return (
       <Link
         key={key}
-        href={{ pathname: "/home", query }}
+        href={{
+          pathname: "/home",
+          query: makeQuery({
+            page: 1,
+            ...(key !== "all" ? { cat: key } : { cat: undefined }),
+          }),
+        }}
         className={`px-3 py-1.5 rounded-full text-sm border transition whitespace-nowrap
-          ${isActive ? "bg-black text-white border-black" : "bg-white text-gray-700 hover:bg-gray-50"}`}
+          ${
+            isActive
+              ? "bg-black text-white border-black"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          }`}
       >
         {label}
       </Link>
@@ -92,13 +65,14 @@ export default async function HomePage({
   };
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-10">
+    // mở rộng chiều rộng layout
+    <main className="max-w-7xl mx-auto px-4 py-10">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-4">
         <h1 className="text-2xl font-semibold text-gray-900">Món ăn</h1>
       </div>
 
-      {/* Tabs filter: sticky ngay dưới header */}
+      {/* Tabs filter */}
       <div className="sticky top-27 z-30 -mx-4 px-4 py-4 mb-6 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/50 border-b">
         <div className="flex items-center gap-2 overflow-x-auto">
           {Tab("Tất cả", "all")}
@@ -106,57 +80,119 @@ export default async function HomePage({
         </div>
       </div>
 
-      {/* Grid cards */}
-      <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {dishes.map((d: any) => {
-          const rating = fakeRatingFromId(d.id ?? d.slug ?? d.title);
-          const gradient = gradientFromId(d.id ?? d.slug ?? d.title);
-          const img = dishImageUrl(d) ?? "/placeholder.png";
-          return (
-            <li key={d.id} className="group">
-              <Link href={`/home/${d.slug}`} className="block">
-                <div className="relative aspect-square overflow-hidden rounded-2xl border">
-                  <img
-                    src={img}
-                    alt={d.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  {/* viền sáng + overlay gradient để card bắt mắt */}
-                  <div
-                    className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-tr ${gradient} mix-blend-multiply`}
-                  />
-                  <div className="pointer-events-none absolute inset-0 ring-1 ring-black/5 rounded-2xl" />
-                  {/* chip thời gian/phần ăn */}
-                  <div className="absolute left-2 top-2 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
-                      ⏱ {d.time_minutes ? `${d.time_minutes} phút` : "—"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
-                      🍽 {d.servings ? `${d.servings} phần` : "—"}
-                    </span>
-                  </div>
-                  {/* rating badge */}
-                  <div className="absolute right-2 bottom-2">
-                    <div className="rounded-xl bg-white/95 px-2.5 py-1 shadow-md">
-                      <RatingStars rating={rating} />
-                    </div>
-                  </div>
-                </div>
+      {/* ===== Layout 2 cột: TOC trái + nội dung phải ===== */}
+      <div className="grid grid-cols-1 md:grid-cols-[18%_82%] gap-6">
+        {/* Sidebar TOC (sticky) */}
+        <SideToc
+          items={[
+            { id: "section-all", label: "Tất cả món" },
+            { id: "section-veg", label: "Món chay nổi bật" },
+          ]}
+          offset={112}
+        />
 
-                <div className="mt-3">
-                  <p className="font-semibold line-clamp-1 text-gray-900 group-hover:text-gray-700 transition-colors">
-                    {d.title}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-600">
-                    {d.category_name ? d.category_name : ""}
-                  </p>
-                </div>
+        {/* Content */}
+        <div className="min-w-0">
+          {/* Grid chính */}
+          <section id="section-all" className="scroll-mt-28">
+            <DishGrid
+              dishes={dishItems}
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
+              itemClassName="h-full"
+            />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <nav className="mt-8 flex items-center justify-center gap-2">
+                <Link
+                  href={{
+                    pathname: "/home",
+                    query: makeQuery({ page: Math.max(1, page - 1) }),
+                  }}
+                  aria-disabled={page === 1}
+                  className={`px-3 py-1.5 rounded border text-sm ${
+                    page === 1
+                      ? "pointer-events-none opacity-50"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  Trước
+                </Link>
+
+                {Array.from({ length: totalPages })
+                  .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
+                  .map((_, i) => {
+                    const p = Math.max(1, page - 2) + i;
+                    return (
+                      <Link
+                        key={p}
+                        href={{
+                          pathname: "/home",
+                          query: makeQuery({ page: p }),
+                        }}
+                        className={`px-3 py-1.5 rounded border text-sm ${
+                          p === page
+                            ? "bg-black text-white border-black"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        {p}
+                      </Link>
+                    );
+                  })}
+
+                <Link
+                  href={{
+                    pathname: "/home",
+                    query: makeQuery({ page: Math.min(totalPages, page + 1) }),
+                  }}
+                  aria-disabled={page === totalPages}
+                  className={`px-3 py-1.5 rounded border text-sm ${
+                    page === totalPages
+                      ? "pointer-events-none opacity-50"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  Sau
+                </Link>
+              </nav>
+            )}
+          </section>
+
+          {/* Veg section */}
+          <section
+            id="section-veg"
+            className="mt-12 scroll-mt-28"
+            aria-labelledby="veg-heading"
+          >
+            <div className="h-px bg-gradient-to-r from-transparent via-purple-300/70 to-transparent" />
+            <div className="mt-6 flex items-baseline justify-between">
+              <h2
+                id="veg-heading"
+                className="text-xl font-semibold text-gray-900"
+              >
+                Món chay nổi bật
+              </h2>
+              <Link
+                href={{
+                  pathname: "/home",
+                  query: { ...makeQuery(), cat: "veg", page: 1 },
+                }}
+                className="text-sm font-medium text-purple-600 hover:text-purple-700"
+              >
+                Xem tất cả
               </Link>
-            </li>
-          );
-        })}
-      </ul>
+            </div>
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-4 sm:p-5">
+              <VegDishesSection
+                page={Number(vegPage) || 1}
+                pageSize={12}
+                q={q}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }

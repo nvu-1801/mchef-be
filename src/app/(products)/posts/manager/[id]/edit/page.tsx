@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import DishForm from "@/components/dishes/DishForm";
 import { updateDish } from "../../actions";
 
@@ -63,7 +63,7 @@ export default async function EditDishPage({
         categories={categories}
         defaultValues={dish}
         submitText="Cập nhật"
-        action={updateDish.bind(null, dish.id)}  
+        action={updateDish.bind(null, dish.id)}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import type { ProfileData } from "./types";
+import type { ProfileData } from "../../app/(products)/profile/me/types";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
@@ -125,8 +125,9 @@ export default function ProfileForm({
     }
 
     try {
-      const res = await fetch("/api/profiles/me", {
+      const res = await fetch("/api/me", {
         method: "PUT",
+        credentials: "include", // đề phòng cần cookie-based
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: fullName.trim(),
@@ -154,10 +155,10 @@ export default function ProfileForm({
         const updatedProfile: ProfileData = {
           ...baseline,
           ...updated,
-          fullName: updated.fullName ?? baseline.fullName ?? "",
-          avatarUrl: updated.avatarUrl ?? baseline.avatarUrl ?? "",
-          bio: updated.bio ?? baseline.bio ?? "",
-          skills: updated.skills ?? baseline.skills ?? [],
+          fullName: updated.fullName ?? "",
+          avatarUrl: updated.avatarUrl ?? "",
+          bio: updated.bio ?? "",
+          skills: updated.skills ?? [],
           updatedAt: updated.updatedAt ?? baseline.updatedAt ?? null,
         };
         setBaseline(updatedProfile);

@@ -5,6 +5,7 @@ import ProfileForm from "./profile-form";
 import type { ProfileData } from "../../app/(products)/profile/me/types";
 import CertificateModal from "./CertificateModal";
 import { supabaseBrowser } from "../../libs/supabase/supabase-client";
+import MyCertificates from "./MyCertificates";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
@@ -384,6 +385,15 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
               </span>
             </div>
           </div>
+          <div className="md:col-span-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500">
+              My Certificates
+            </div>
+            <div className="mt-1 rounded-md bg-gray-50 px-3 py-2 text-sm">
+             <MyCertificates />
+            </div>
+          </div>
+          
           <div className="md:col-span-2">
             <div className="text-xs uppercase tracking-wide text-gray-500">
               Last updated

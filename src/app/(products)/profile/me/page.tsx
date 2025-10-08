@@ -1,6 +1,6 @@
 // app/profile/me/page.tsx
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import ProfileView from "../../../../components/profile/profile-view";
 
 export const revalidate = 0;

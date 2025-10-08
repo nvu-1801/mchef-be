@@ -1,7 +1,6 @@
 import "server-only";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import type { Product } from "../product-public";
-
 
 type CatKey = "all" | "giay" | "quan-ao";
 

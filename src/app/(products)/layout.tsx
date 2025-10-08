@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { GlobalLoading } from "@/components/common/GlobalLoading";
 import AdminDropdown from "@/components/common/AdminDropdown";

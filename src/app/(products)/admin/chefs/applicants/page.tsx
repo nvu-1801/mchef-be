@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import Link from "next/link";
 import ApplicantsList from "../../../../../components/chef/ApplicantsList";
 

@@ -1,7 +1,7 @@
 // app/api/dishes/[id]/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 type Params = { params: { id: string } };
 

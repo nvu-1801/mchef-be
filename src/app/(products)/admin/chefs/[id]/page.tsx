@@ -1,6 +1,6 @@
 // app/chefs/[id]/page.tsx
 import { notFound } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import ChefHeader from "../../../../../components/chef/ChefHeader";
 import DishMini from "../../../../../components/chef/DishMini";
 import RatingItem from "../../../../../components/chef/RatingItem";
@@ -38,12 +38,18 @@ type Rating = {
   stars: number | null;
   comment: string | null;
   created_at: string | null;
-  rater: { id: string; display_name: string | null; avatar_url: string | null } | null;
+  rater: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 export default async function ChefDetailPage({
   params,
-}: { params: { id: string } }) {
+}: {
+  params: { id: string };
+}) {
   const sb = await supabaseServer();
 
   // 1) Lấy hồ sơ chef từ VIEW
@@ -58,16 +64,18 @@ export default async function ChefDetailPage({
   }
 
   // 2) Lấy 8 món mới nhất do chef (theo user_id) & đã publish
-  const { data: dishes } = await sb
+  const { data: dishes } = (await sb
     .from("dishes")
-    .select("id, slug, title, cover_image_url, time_minutes, servings, created_at")
+    .select(
+      "id, slug, title, cover_image_url, time_minutes, servings, created_at"
+    )
     .eq("created_by", chef.user_id)
     .eq("published", true)
     .order("created_at", { ascending: false })
-    .limit(8) as { data: Dish[] | null };
+    .limit(8)) as { data: Dish[] | null };
 
   // 3) Lấy 10 rating gần nhất cho chef (kèm người đánh giá)
-  const { data: ratings } = await sb
+  const { data: ratings } = (await sb
     .from("chef_ratings")
     .select(
       `
@@ -77,7 +85,7 @@ export default async function ChefDetailPage({
     )
     .eq("chef_id", chef.id)
     .order("created_at", { ascending: false })
-    .limit(10) as { data: Rating[] | null };
+    .limit(10)) as { data: Rating[] | null };
 
   return (
     <div className="mx-auto max-w-6xl p-6">
@@ -95,7 +103,7 @@ export default async function ChefDetailPage({
           </a>
         </div>
 
-        {(!dishes || dishes.length === 0) ? (
+        {!dishes || dishes.length === 0 ? (
           <div className="mt-3 rounded-xl border p-6 text-sm text-gray-600">
             This chef has not published any dishes yet.
           </div>
@@ -111,7 +119,7 @@ export default async function ChefDetailPage({
       {/* Ratings */}
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Recent ratings</h2>
-        {(!ratings || ratings.length === 0) ? (
+        {!ratings || ratings.length === 0 ? (
           <div className="mt-3 rounded-xl border p-6 text-sm text-gray-600">
             No ratings yet.
           </div>

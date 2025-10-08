@@ -1,6 +1,6 @@
 // app/api/chefs/[id]/route.ts
 import { NextRequest } from "next/server";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 export const revalidate = 0;
 

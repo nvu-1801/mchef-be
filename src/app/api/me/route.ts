@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -27,14 +27,21 @@ async function getUserScopedClient(req: Request) {
     });
     const { data, error } = await sb.auth.getUser();
     if (error || !data?.user) {
-      return { errorRes: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+      return {
+        errorRes: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      };
     }
     return { userId: data.user.id, sb };
   }
 
   const sb = await supabaseServer();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return { errorRes: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user)
+    return {
+      errorRes: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
   return { userId: user.id, sb };
 }
 
@@ -46,11 +53,14 @@ export async function GET(req: Request) {
 
   const { data, error } = await sb
     .from("profiles")
-    .select("id, email, display_name, avatar_url, bio, skills, role, updated_at")
+    .select(
+      "id, email, display_name, avatar_url, bio, skills, role, updated_at"
+    )
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({
     id: data?.id ?? userId,
@@ -67,7 +77,12 @@ export async function GET(req: Request) {
 /** ===================== PUT /api/me ===================== */
 const Body = z.object({
   fullName: z.string().trim().min(1).max(120).optional(),
-  avatarUrl: z.string().trim().url("Avatar URL không hợp lệ").optional().or(z.literal("")),
+  avatarUrl: z
+    .string()
+    .trim()
+    .url("Avatar URL không hợp lệ")
+    .optional()
+    .or(z.literal("")),
   bio: z.string().trim().max(1000).optional().or(z.literal("")),
   skills: z.array(z.string().trim()).optional(),
 });
@@ -98,10 +113,13 @@ export async function PUT(req: Request) {
     // Không đổi gì -> vẫn trả lại state hiện tại cho client đồng bộ
     const { data, error } = await sb
       .from("profiles")
-      .select("id, email, display_name, avatar_url, bio, skills, role, updated_at")
+      .select(
+        "id, email, display_name, avatar_url, bio, skills, role, updated_at"
+      )
       .eq("id", userId)
       .single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({
       id: data.id,
       email: data.email ?? "",
@@ -118,10 +136,13 @@ export async function PUT(req: Request) {
     .from("profiles")
     .update(patch)
     .eq("id", userId)
-    .select("id, email, display_name, avatar_url, bio, skills, role, updated_at")
+    .select(
+      "id, email, display_name, avatar_url, bio, skills, role, updated_at"
+    )
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({
     id: data.id,

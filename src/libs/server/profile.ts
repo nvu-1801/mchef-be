@@ -1,6 +1,6 @@
 // libs/server/profile.ts
 import { createClient, type User } from "@supabase/supabase-js";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 type RawProfile = {
   id: string;
@@ -46,16 +46,23 @@ function normalizeProfile(user: User, prof: RawProfile): ProfileData {
 export async function getCurrentUserAndProfileFromCookies() {
   const sb = await supabaseServer();
   const { data: userData, error: userErr } = await sb.auth.getUser();
-  if (userErr || !userData?.user) return { user: null, profile: null as ProfileData | null, error: userErr };
+  if (userErr || !userData?.user)
+    return { user: null, profile: null as ProfileData | null, error: userErr };
 
   const user = userData.user;
   const { data: prof, error: profErr } = await sb
     .from("profiles")
-    .select(`id, email, display_name, avatar_url, bio, skills, role, cert_status, certificates, updated_at`)
+    .select(
+      `id, email, display_name, avatar_url, bio, skills, role, cert_status, certificates, updated_at`
+    )
     .eq("id", user.id)
     .maybeSingle();
 
-  return { user, profile: normalizeProfile(user, prof), error: profErr ?? null };
+  return {
+    user,
+    profile: normalizeProfile(user, prof),
+    error: profErr ?? null,
+  };
 }
 
 export function makeClientWithBearer(token: string) {
@@ -70,14 +77,21 @@ export function makeClientWithBearer(token: string) {
 export async function getCurrentUserAndProfileFromBearer(token: string) {
   const sb = makeClientWithBearer(token);
   const { data: userData, error: userErr } = await sb.auth.getUser();
-  if (userErr || !userData?.user) return { user: null, profile: null as ProfileData | null, error: userErr };
+  if (userErr || !userData?.user)
+    return { user: null, profile: null as ProfileData | null, error: userErr };
 
   const user = userData.user;
   const { data: prof, error: profErr } = await sb
     .from("profiles")
-    .select(`id, email, display_name, avatar_url, bio, skills, role, cert_status, certificates, updated_at`)
+    .select(
+      `id, email, display_name, avatar_url, bio, skills, role, cert_status, certificates, updated_at`
+    )
     .eq("id", user.id)
     .maybeSingle();
 
-  return { user, profile: normalizeProfile(user, prof), error: profErr ?? null };
+  return {
+    user,
+    profile: normalizeProfile(user, prof),
+    error: profErr ?? null,
+  };
 }

@@ -1,6 +1,6 @@
 // src/modules/dishes/service/dish.service.ts
 import "server-only";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import type { Dish, DishFull } from "../dish-public";
 
 /* =========================
@@ -14,10 +14,7 @@ const DEFAULT_IMAGE_BUCKET =
 
 /** Supabase public object URL builder: bucket/key -> full URL */
 export function imagePathToUrl(objectPath: string) {
-  const safe = objectPath
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
+  const safe = objectPath.split("/").map(encodeURIComponent).join("/");
   if (!SUPABASE_BASE) {
     // Fallback khi chưa có env: coi như ảnh trong /public
     return `/${objectPath.replace(/^\/+/, "")}`;
@@ -46,9 +43,7 @@ export function resolveImageUrl(raw?: string | null): string | null {
   if (url.startsWith("/")) return url;
 
   // 3) Key của Supabase Storage: "bucket/file" hoặc chỉ "file"
-  const objectPath = url.includes("/")
-    ? url
-    : `${DEFAULT_IMAGE_BUCKET}/${url}`;
+  const objectPath = url.includes("/") ? url : `${DEFAULT_IMAGE_BUCKET}/${url}`;
   return imagePathToUrl(objectPath);
 }
 
@@ -94,7 +89,7 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
  * - cat: "all" hoặc slug của category
  * - Chỉ lấy published: true
  * - Tạm order theo title (nếu muốn theo thời gian, thêm created_at trong schema & select)
- */export async function listDishes({
+ */ export async function listDishes({
   q = "",
   cat = "all",
   page = 1,
@@ -112,7 +107,9 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
   let qy = sb
     .from("dishes")
     // lấy cả count để tính tổng trang
-    .select(usingFilter ? DISH_SELECT_WITH_FILTER : DISH_SELECT_DEFAULT, { count: "exact" })
+    .select(usingFilter ? DISH_SELECT_WITH_FILTER : DISH_SELECT_DEFAULT, {
+      count: "exact",
+    })
     .eq("published", true)
     .order("title", { ascending: true });
 
@@ -135,7 +132,6 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
     pageSize: _size,
   };
 }
-
 
 /** Lấy 1 món FULL theo slug (published) */
 export async function getDishFullBySlug(slug: string) {
@@ -177,7 +173,6 @@ export async function getDishFullBySlug(slug: string) {
 
   return data;
 }
-
 
 /** Lấy 1 món theo slug (published) */
 export async function getDishBySlug(slug: string) {

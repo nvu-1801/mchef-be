@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import ProfileForm from "./profile-form";
 import type { ProfileData } from "../../app/(products)/profile/me/types";
 import CertificateModal from "./CertificateModal";
+import { supabaseBrowser } from "../../libs/supabase/supabase-client";
+import MyCertificates from "./MyCertificates";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
@@ -103,6 +105,16 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
     }
   }
 
+  // thay updatedLabel useMemo hiện tại bằng client-only label
+  const [clientUpdatedLabel, setClientUpdatedLabel] = useState("—");
+  useEffect(() => {
+    if (!profile.updatedAt) return setClientUpdatedLabel("—");
+    const t = new Date(profile.updatedAt);
+    if (Number.isNaN(t.getTime())) return setClientUpdatedLabel("—");
+    // Thích gì thì format nấy (locale của user)
+    setClientUpdatedLabel(t.toLocaleString());
+  }, [profile.updatedAt]);
+
   const avatarSrc =
     profile.avatarUrl && /^https?:\/\//i.test(profile.avatarUrl)
       ? profile.avatarUrl
@@ -120,25 +132,23 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
       setCertSubmitting(true);
 
       // 1) Upload các file → nhận về publicUrls (giống code bạn đang có)
-      let fileUrls: string[] = [];
+      let filePaths: string[] = [];
       if (payload.files.length > 0) {
-        fileUrls = await uploadCertificateFiles(payload.files); // <- dùng helper bạn đã có
+        filePaths = await uploadCertificateFiles(payload.files); // now returns paths
       }
 
-      // 2) Link (nếu có)
       const links = payload.link ? [payload.link] : [];
 
-      if (fileUrls.length === 0 && links.length === 0) {
+      if (filePaths.length === 0 && links.length === 0) {
         showToast({ type: "error", msg: "Hãy chọn file hoặc nhập link" });
         return;
       }
 
-      // 3) Gọi API lưu certificates
       const saveRes = await fetch("/api/profiles/me/certificates", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: fileUrls, links }),
+        body: JSON.stringify({ files: filePaths, links }), // <<-- GỬI PATHS
       });
 
       if (!saveRes.ok) {
@@ -168,102 +178,33 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
   }
 
   async function uploadCertificateFiles(files: File[]): Promise<string[]> {
-    const uploadedUrls: string[] = [];
+    const sb = supabaseBrowser();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    if (!user) throw new Error("Bạn cần đăng nhập");
+
+    const paths: string[] = [];
+
     for (const f of files) {
-      const filename = `${Date.now()}_${encodeURIComponent(f.name)}`;
-      // Ký url
-      const signRes = await fetch("/api/uploads/sign", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bucket: "certificates",
-          path: filename,
-          contentType: f.type || "application/octet-stream",
-        }),
-      });
-      if (!signRes.ok) {
-        const txt = await signRes.text();
-        throw new Error(txt || "Sign upload URL failed");
+      if (f.size > 10 * 1024 * 1024) throw new Error(`${f.name} > 10MB`);
+      if (!["application/pdf", "image/png", "image/jpeg"].includes(f.type)) {
+        throw new Error(`${f.name} không đúng định dạng (PDF/PNG/JPG)`);
       }
-      const { uploadUrl, publicUrl } = await signRes.json();
 
-      // PUT file lên storage
-      const putRes = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": f.type || "application/octet-stream" },
-        body: f,
-      });
+      const ext = f.name.split(".").pop() || "bin";
+      const safeName = f.name.replace(/[^\w.\-()+ ]/g, "_");
+      const path = `${user.id}/${Date.now()}_${safeName}.${ext}`;
 
-      if (!putRes.ok) {
-        const txt = await putRes.text();
-        throw new Error(txt || "Upload file failed");
-      }
-      uploadedUrls.push(publicUrl);
+      const { error } = await sb.storage
+        .from("certificates")
+        .upload(path, f, { upsert: false, contentType: f.type });
+
+      if (error) throw error;
+      paths.push(path);
     }
-    return uploadedUrls;
-  }
 
-  // ---- Submit chứng chỉ ----
-  async function handleSubmitCertificates(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      setCertSubmitting(true);
-
-      // 1) Upload file (nếu có)
-      let fileUrls: string[] = [];
-      if (certFiles.length > 0) {
-        fileUrls = await uploadCertificateFiles(certFiles);
-      }
-
-      // 2) Chuẩn bị links
-      const links: string[] = certLink.trim() ? [certLink.trim()] : [];
-
-      if (fileUrls.length === 0 && links.length === 0) {
-        showToast({ type: "error", msg: "Hãy chọn file hoặc nhập link" });
-        return;
-      }
-
-      // 3) Gọi API lưu certificates
-      const saveRes = await fetch("/api/profiles/me/certificates", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: fileUrls, links }),
-      });
-      if (!saveRes.ok) {
-        const txt = await saveRes.text();
-        throw new Error(txt || "Save certificates failed");
-      }
-
-      const updated = await saveRes.json();
-      // Chấp nhận 2 trường hợp: API trả full profile hoặc chỉ certificates
-      if (updated && typeof updated === "object") {
-        setProfile((prev) => ({
-          ...prev,
-          certificates: Array.isArray(updated.certificates)
-            ? updated.certificates
-            : Array.isArray(prev.certificates)
-            ? prev.certificates
-            : [],
-          updatedAt:
-            updated.updatedAt ?? prev.updatedAt ?? new Date().toISOString(),
-        }));
-      }
-
-      // Reset & close
-      setCertFiles([]);
-      setCertLink("");
-      setShowCertModal(false);
-      showToast({ type: "success", msg: "Certificate updated" });
-    } catch (err: any) {
-      showToast({
-        type: "error",
-        msg: err?.message || "Cannot upload certificate",
-      });
-    } finally {
-      setCertSubmitting(false);
-    }
+    return paths;
   }
 
   return (
@@ -335,9 +276,13 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                       {profile.email || "—"}
                     </button>
                     <span className="text-gray-400">•</span>
-                    <span className="text-gray-500">
-                      Updated: {updatedLabel}
-                    </span>
+                    <time
+                      className="text-gray-500"
+                      dateTime={profile.updatedAt ?? ""}
+                      suppressHydrationWarning
+                    >
+                      Updated: {clientUpdatedLabel}
+                    </time>
                   </div>
                 </div>
 
@@ -440,6 +385,15 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
               </span>
             </div>
           </div>
+          <div className="md:col-span-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500">
+              My Certificates
+            </div>
+            <div className="mt-1 rounded-md bg-gray-50 px-3 py-2 text-sm">
+             <MyCertificates />
+            </div>
+          </div>
+          
           <div className="md:col-span-2">
             <div className="text-xs uppercase tracking-wide text-gray-500">
               Last updated

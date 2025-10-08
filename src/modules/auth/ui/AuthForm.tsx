@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabaseBrowser } from "../../../libs/db/supabase/supabase-client";
+import { supabaseBrowser } from "../../../libs/supabase/supabase-client";
 
 function humanize(message?: string) {
   const m = (message || "").toLowerCase();

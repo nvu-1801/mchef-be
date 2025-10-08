@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createDish as _createDish, deleteDish } from "./actions";
-import AddDishButton from "./AddDishButton"; 
+import AddDishButton from "./AddDishButton";
 
 export const dynamic = "force-dynamic";
 
@@ -38,20 +38,28 @@ function gradientFromId(id: string) {
 }
 function formatVN(dt?: string | null) {
   if (!dt) return "—";
-  try { return new Date(dt).toLocaleString("vi-VN"); } catch { return "—"; }
+  try {
+    return new Date(dt).toLocaleString("vi-VN");
+  } catch {
+    return "—";
+  }
 }
 function StatusBadge({ published }: { published: boolean }) {
   return (
-    <span className={
-      "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold " +
-      (published
-        ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-200"
-        : "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-200")
-    }>
+    <span
+      className={
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold " +
+        (published
+          ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-200"
+          : "bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-200")
+      }
+    >
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
-        {published
-          ? <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
-          : <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 5h-2v6l5 3 .999-1.732L13 12.535Z" />}
+        {published ? (
+          <path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
+        ) : (
+          <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 5h-2v6l5 3 .999-1.732L13 12.535Z" />
+        )}
       </svg>
       {published ? "Public" : "Draft"}
     </span>
@@ -61,13 +69,22 @@ function RatingStars({ rating }: { rating: number }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
   return (
-    <div className="flex items-center gap-1" aria-label={`Rating ${rating.toFixed(1)} / 5`}>
-      {[0,1,2,3,4].map((i) => {
+    <div
+      className="flex items-center gap-1"
+      aria-label={`Rating ${rating.toFixed(1)} / 5`}
+    >
+      {[0, 1, 2, 3, 4].map((i) => {
         const isFull = i < full;
         const isHalf = i === full && half;
         return (
           <span key={i} className="relative inline-block h-4 w-4">
-            <svg viewBox="0 0 24 24" className="absolute inset-0" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg
+              viewBox="0 0 24 24"
+              className="absolute inset-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            >
               <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
             </svg>
             <svg
@@ -83,17 +100,24 @@ function RatingStars({ rating }: { rating: number }) {
           </span>
         );
       })}
-      <span className="ml-1 text-xs font-medium text-gray-700">{rating.toFixed(1)}</span>
+      <span className="ml-1 text-xs font-medium text-gray-700">
+        {rating.toFixed(1)}
+      </span>
     </div>
   );
 }
 
 export default async function DishesManagerPage() {
   const sb = await supabaseServer();
-  const { data: { user } } = await sb.auth.getUser();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
   if (!user) redirect("/auth/signin");
 
-  const { data: catData } = await sb.from("categories").select("id,name").order("name", { ascending: true });
+  const { data: catData } = await sb
+    .from("categories")
+    .select("id,name")
+    .order("name", { ascending: true });
   const categories: Category[] = (catData ?? []) as Category[];
 
   const { data: dishData } = await sb
@@ -103,7 +127,7 @@ export default async function DishesManagerPage() {
     .order("created_at", { ascending: false });
   const dishes: DishListItem[] = (dishData ?? []) as DishListItem[];
 
-    const createDishVoid = async (formData: FormData): Promise<void> => {
+  const createDishVoid = async (formData: FormData): Promise<void> => {
     "use server";
     await _createDish(formData);
     // không return gì → Promise<void>
@@ -114,8 +138,12 @@ export default async function DishesManagerPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Quản lý món của tôi</h1>
-          <p className="text-sm text-gray-600 mt-1">Đăng món mới và quản lý danh sách món đã đăng.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Quản lý món của tôi
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Đăng món mới và quản lý danh sách món đã đăng.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -125,7 +153,7 @@ export default async function DishesManagerPage() {
             Làm mới
           </Link>
           {/* Nút mở modal form */}
-         <AddDishButton categories={categories} action={createDishVoid} />
+          <AddDishButton categories={categories} action={createDishVoid} />
         </div>
       </div>
 
@@ -173,7 +201,9 @@ export default async function DishesManagerPage() {
                 {/* Content */}
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2">{d.title}</h3>
+                    <h3 className="font-semibold text-gray-900 line-clamp-2">
+                      {d.title}
+                    </h3>
                     <StatusBadge published={d.published} />
                   </div>
 

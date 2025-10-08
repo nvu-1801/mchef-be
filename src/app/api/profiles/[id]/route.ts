@@ -1,6 +1,6 @@
 // app/api/profiles/[id]/route.ts
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 type Params = { params: { id: string } };
 
@@ -15,7 +15,10 @@ export async function GET(_req: Request, { params }: Params) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: "Fetch failed", detail: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fetch failed", detail: error.message },
+      { status: 500 }
+    );
   }
   if (!data) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

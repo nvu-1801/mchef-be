@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import UpgradeClient from "@/components/upgrade/UpgradeClient";
 
 export const revalidate = 0;
@@ -10,7 +10,11 @@ export default async function UpgradePage() {
 
   let role: "user" | "chef" | "admin" | null = null;
   if (user) {
-    const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).single();
+    const { data: prof } = await sb
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
     role = (prof?.role as any) ?? null;
   }
 

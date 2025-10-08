@@ -1,7 +1,7 @@
 // app/api/dishes/route.ts
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createClient } from "@supabase/supabase-js";
 
 // ⚠️ Nếu enum diet của bạn khác (vd: 'veg' | 'nonveg' | 'vegan' ...)
@@ -40,10 +40,10 @@ export async function GET(request: Request) {
 
   const sb = await supabaseServer();
 
-let query = sb
-  .from("dishes")
-  .select(
-    `
+  let query = sb
+    .from("dishes")
+    .select(
+      `
     id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
     created_by, published, created_at, updated_at,
     category:category_id ( id, slug, name, icon ),
@@ -57,14 +57,17 @@ let query = sb
     favorites ( user_id ),
     creator:created_by ( id, display_name, avatar_url )
     `,
-    { count: "exact" }
-  )
-  .order("created_at", { ascending: false })
-  .order("sort", { foreignTable: "dish_images", ascending: true })
-  .order("step_no", { foreignTable: "recipe_steps", ascending: true })
-  // nếu lỗi ở dòng dưới (vì foreign table lồng 2 cấp), hãy bỏ hoặc đổi sang 'ingredient'
-  .order("name", { foreignTable: "dish_ingredients.ingredient", ascending: true })
-  .order("created_at", { foreignTable: "ratings", ascending: false });
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .order("sort", { foreignTable: "dish_images", ascending: true })
+    .order("step_no", { foreignTable: "recipe_steps", ascending: true })
+    // nếu lỗi ở dòng dưới (vì foreign table lồng 2 cấp), hãy bỏ hoặc đổi sang 'ingredient'
+    .order("name", {
+      foreignTable: "dish_ingredients.ingredient",
+      ascending: true,
+    })
+    .order("created_at", { foreignTable: "ratings", ascending: false });
 
   if (q) query = query.ilike("title", `%${q}%`);
   if (category_id) query = query.eq("category_id", category_id);
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
   // ✅ Tạo client “mang danh user” để RLS nhận diện auth.uid()
   const userClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,             // dùng anon key
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // dùng anon key
     {
       auth: { persistSession: false, detectSessionInUrl: false },
       global: { headers: { Authorization: `Bearer ${jwt}` } }, // quan trọng
@@ -136,7 +139,7 @@ export async function POST(req: Request) {
       servings: payload.servings ?? null,
       tips: payload.tips ?? null,
       published: payload.published ?? false,
-      created_by: user.id,                                  // server quyết định
+      created_by: user.id, // server quyết định
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

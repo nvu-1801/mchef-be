@@ -1,5 +1,5 @@
 // app/chefs/page.tsx
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import PublicChefs from "../../../../components/chef/PublicChefs";
 
 export const revalidate = 60;

@@ -5,10 +5,10 @@ import {
 } from "@/modules/dishes/service/dish.service";
 import DishDetailClient from "./dish-detail.client";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export default async function DishDetailPage({ params }: Props) {
-  const { slug } = params;
+  const { slug } = await params;
 
   try {
     const dish = await getDishFullBySlug(slug); // lấy đủ các field join

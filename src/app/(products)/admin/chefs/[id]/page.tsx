@@ -48,9 +48,9 @@ type Rating = {
 export default async function ChefDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string }; 
 }) {
-  const { id } = await params;
+  const { id } = params;
 
   const sb = await supabaseServer();
 

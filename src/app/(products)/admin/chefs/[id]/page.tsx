@@ -48,15 +48,17 @@ type Rating = {
 export default async function ChefDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   const sb = await supabaseServer();
 
   // 1) Lấy hồ sơ chef từ VIEW
   const { data: chef, error: e1 } = await sb
     .from("chef_overview")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single<Chef>();
 
   if (e1 || !chef || !chef.is_active) {

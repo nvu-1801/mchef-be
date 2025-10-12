@@ -1,29 +1,35 @@
 // app/api/admin/certificates/[id]/verify/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { action, reason } = await req.json().catch(() => ({}));
-  if (!["approve","reject"].includes(action)) {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  }
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const action = body.action === "reject" ? "rejected" : "approved";
 
-  const updates =
-    action === "approve"
-      ? { status: "approved", reviewed_at: new Date().toISOString(), rejection_reason: null }
-      : { status: "rejected", reviewed_at: new Date().toISOString(), rejection_reason: reason ?? null };
+  const sb = await supabaseServer();
+  const {
+    data: { user },
+    error: authErr,
+  } = await sb.auth.getUser();
+  if (authErr || !user)
+    return NextResponse.json({ ok: false }, { status: 401 });
+
+  // Optionally: you may check user role here (admin) before proceeding
 
   const { error } = await sb
     .from("certificates")
-    .update(updates)
-    .eq("id", params.id)
-    .in("status", ["pending"]);
+    .update({ status: action })
+    .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
 
   return NextResponse.json({ ok: true });
 }

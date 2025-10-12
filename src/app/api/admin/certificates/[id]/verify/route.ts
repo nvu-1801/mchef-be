@@ -4,9 +4,17 @@ import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  // use a broader, compatible type for params to satisfy Next's overloads
+  context: { params: Record<string, string | string[]> }
 ) {
-  const { id } = params;
+  const rawId = context.params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  if (!id)
+    return NextResponse.json(
+      { ok: false, error: "Missing id" },
+      { status: 400 }
+    );
+
   const body = (await request.json().catch(() => ({}))) as Record<
     string,
     unknown
@@ -21,7 +29,7 @@ export async function POST(
   if (authErr || !user)
     return NextResponse.json({ ok: false }, { status: 401 });
 
-  // Optionally: you may check user role here (admin) before proceeding
+  // Optionally: check user.role === 'admin' here
 
   const { error } = await sb
     .from("certificates")

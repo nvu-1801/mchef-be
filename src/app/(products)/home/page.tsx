@@ -17,11 +17,17 @@ export default async function HomePage({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const { q = "", cat = "all", page: pageStr = "1", vegPage = "1" } = await searchParams;
+  const {
+    q = "",
+    cat = "all",
+    page: pageStr = "1",
+    vegPage = "1",
+  } = await searchParams;
   const page = Math.max(1, Number(pageStr) || 1);
   const PAGE_SIZE = 12; // 6 cột * 2 hàng ở xl
 
-  const cats = await listCategories();
+  const cats = (await listCategories()) as { name: string; slug: string }[];
+
   const { items: dishItems, total } = await listDishes({
     q,
     cat,
@@ -76,7 +82,7 @@ export default async function HomePage({
       <div className="sticky top-27 z-30 -mx-4 px-4 py-4 mb-6 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/50 border-b">
         <div className="flex items-center gap-2 overflow-x-auto">
           {Tab("Tất cả", "all")}
-          {cats.map((c: any) => Tab(c.name, c.slug))}
+          {cats.map((c) => Tab(c.name, c.slug))}
         </div>
       </div>
 

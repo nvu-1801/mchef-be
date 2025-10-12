@@ -92,17 +92,32 @@ export async function PUT(req: Request) {
   if ("errorRes" in who) return who.errorRes;
   const { sb, userId } = who;
 
-  const json = await req.json().catch(() => ({}));
-  const parsed = Body.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Bad payload", details: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
+  const body = (await req.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
 
-  const patch: Record<string, any> = {};
-  const { fullName, avatarUrl, bio, skills } = parsed.data;
+  // Example access with runtime checks:
+  const fullName =
+    typeof body?.fullName === "string" ? (body.fullName as string) : undefined;
+  const avatarUrl =
+    typeof body?.avatarUrl === "string"
+      ? (body.avatarUrl as string)
+      : undefined;
+  const bio = typeof body?.bio === "string" ? (body.bio as string) : undefined;
+  const skills =
+    Array.isArray(body?.skills) &&
+    body.skills.every((skill) => typeof skill === "string")
+      ? (body.skills as string[])
+      : undefined;
+
+  type ProfilePatch = {
+    display_name?: string | null;
+    avatar_url?: string | null;
+    bio?: string | null;
+    skills?: string[];
+  };
+  const patch: ProfilePatch = {};
 
   if (fullName !== undefined) patch.display_name = fullName;
   if (avatarUrl !== undefined) patch.avatar_url = avatarUrl || null;

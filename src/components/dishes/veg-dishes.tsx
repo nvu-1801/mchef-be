@@ -1,7 +1,7 @@
 // components/dishes/veg-dishes.tsx
 import Link from "next/link";
 import DishGrid, { type DishCard } from "@/components/dishes/dish-grid";
-import { listDishes, dishImageUrl } from "@/modules/dishes/service/dish.service";
+import { listDishes } from "@/modules/dishes/service/dish.service";
 
 export const revalidate = 60;
 
@@ -14,16 +14,35 @@ type Props = {
   q?: string;
 };
 
+type DishItem = {
+  id: string;
+  slug: string;
+  title: string;
+  category_name?: string | null;
+  time_minutes?: number | null;
+  servings?: number | null;
+  diet?: string | null;
+  cover_image_url?: string | null; // <-- thêm
+  [k: string]: unknown;
+};
+
 export default async function VegDishesSection({
   page = 1,
   pageSize = 12,
   q = "",
 }: Props) {
   // Lấy rộng 1 lần để lọc (tùy dữ liệu của bạn có thể đổi sang truy vấn có điều kiện ở DB)
-  const { items = [] } = await listDishes({ q, cat: "all", page: 1, pageSize: 48 });
+  const { items = [] } = await listDishes({
+    q,
+    cat: "all",
+    page: 1,
+    pageSize: 48,
+  });
+
+  const itemsTyped = items as unknown as DishItem[];
 
   // Lọc món chay
-  const veg = (items as any[]).filter((d) => {
+  const veg = itemsTyped.filter((d) => {
     const v = String(d?.diet ?? "").toLowerCase();
     return v === "veg" || v === "vegetarian" || v === "vegan";
   });
@@ -38,29 +57,33 @@ export default async function VegDishesSection({
   const show = veg.slice(start, start + pageSize);
 
   // Map sang DishCard để dùng lại DishGrid
-  const dishes: DishCard[] = show.map((d: any) => ({
-    id: d.id,
-    slug: d.slug,
-    title: d.title,
-    category_name: d.category_name,
-    time_minutes: d.time_minutes ?? null,
-    servings: d.servings ?? null,
-    // các field ảnh mà dishImageUrl cần
-    ...d,
+  const dishes: DishCard[] = show.map((d) => ({
+    id: String(d.id),
+    slug: String(d.slug),
+    title: String(d.title),
+    category_name: String(d.category_name ?? ""),
+    time_minutes: typeof d.time_minutes === "number" ? d.time_minutes : null,
+    servings: typeof d.servings === "number" ? d.servings : null,
+    cover_image_url: String(
+      (d as { cover_image_url?: string | null }).cover_image_url ?? ""
+    ), // <-- thêm
+    // giữ lại các trường khác nếu cần cho DishGrid
+    ...(d as Record<string, unknown>),
   }));
 
   const buildHref = (p: number) => {
-    // Giữ nguyên /home và q nếu bạn muốn; ở đây mình chỉ thêm vegPage
     const usp = new URLSearchParams();
     if (q) usp.set("q", q);
     usp.set("vegPage", String(p));
-    return { pathname: "/home", query: Object.fromEntries(usp) as any };
+    return `/home?${usp.toString()}`;
   };
 
   return (
     <section aria-labelledby="veg-title" className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 id="veg-title" className="text-base font-semibold">Món chay gợi ý</h2>
+        <h2 id="veg-title" className="text-base font-semibold">
+          Món chay gợi ý
+        </h2>
         <span className="text-sm text-gray-500">{total} món</span>
       </div>
 

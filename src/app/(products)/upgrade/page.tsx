@@ -15,7 +15,16 @@ export default async function UpgradePage() {
       .select("role")
       .eq("id", user.id)
       .single();
-    role = (prof?.role as any) ?? null;
+
+    const profRole =
+      prof && typeof (prof as { role?: unknown }).role === "string"
+        ? (prof as { role?: string }).role
+        : null;
+
+    role =
+      profRole === "user" || profRole === "chef" || profRole === "admin"
+        ? profRole
+        : null;
   }
 
   const isChef = role === "chef" || role === "admin";

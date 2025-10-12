@@ -1,13 +1,16 @@
 // app/api/admin/certificates/[id]/verify/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 export async function POST(
-  req: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
   const action = body.action === "reject" ? "rejected" : "approved";
 
   const sb = await supabaseServer();

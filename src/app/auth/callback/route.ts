@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import {
+  createServerClient,
+  type CookieOptions,
+  type CookieMethodsServer,
+} from "@supabase/ssr";
 
 async function handle(request: Request) {
   const url = new URL(request.url);
@@ -29,21 +33,19 @@ async function handle(request: Request) {
   const cookieStore = await cookies();
 
   // Build a cookies adapter compatible with the Supabase helper at runtime.
-  // We cast to `any` only at the call site to satisfy TypeScript overloads.
   const cookieAdapter = {
     get: (name: string) => cookieStore.get(name)?.value,
     set: (name: string, value: string, options: CookieOptions) =>
       cookieStore.set({ name, value, ...options }),
-    // use `delete` name to match common server cookie APIs
-    delete: (name: string) => cookieStore.delete(name),
-  };
+    // use `remove` to match Supabase server cookie API
+    remove: (name: string) => cookieStore.delete(name),
+  } as unknown as CookieMethodsServer;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      // cast here to avoid "Object literal may only specify known properties" TS error
-      cookies: cookieAdapter as unknown as any,
+      cookies: cookieAdapter,
     }
   );
 

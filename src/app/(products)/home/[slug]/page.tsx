@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
-import { dishImageUrl, getDishFullBySlug } from "@/modules/dishes/service/dish.service";
+import {
+  dishImageUrl,
+  getDishFullBySlug,
+} from "@/modules/dishes/service/dish.service";
 import DishDetailClient from "./dish-detail.client";
 
 type Props = { params: { slug: string } };
@@ -9,12 +12,17 @@ export default async function DishDetailPage({ params }: Props) {
 
   try {
     const dish = await getDishFullBySlug(slug); // lấy đủ các field join
-    const coverUrl = dishImageUrl(dish) ?? dish.cover_image_url ?? "/placeholder.png";
+    const coverUrl =
+      dishImageUrl(dish) ?? dish.cover_image_url ?? "/placeholder.png";
 
     const ratings = dish.ratings ?? [];
     const ratingCount = ratings.length;
     const ratingAvg = ratingCount
-      ? Number((ratings.reduce((s, r) => s + (r.stars || 0), 0) / ratingCount).toFixed(1))
+      ? Number(
+          (
+            ratings.reduce((s, r) => s + (r.stars || 0), 0) / ratingCount
+          ).toFixed(1)
+        )
       : 0;
 
     return (
@@ -25,8 +33,16 @@ export default async function DishDetailPage({ params }: Props) {
         ratingCount={ratingCount}
       />
     );
-  } catch (e: any) {
-    if (e?.message === "NOT_FOUND") return notFound();
+  } catch (e: unknown) {
+    const message =
+      typeof e === "object" &&
+      e !== null &&
+      "message" in e &&
+      typeof (e as { message?: unknown }).message === "string"
+        ? (e as { message: string }).message
+        : undefined;
+
+    if (message === "NOT_FOUND") return notFound();
     throw e;
   }
 }

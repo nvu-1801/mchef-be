@@ -45,7 +45,7 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
     setSaving(true);
     setError(null);
     const endpoint = isEdit
-      ? `/api/admin/products/${(initial as Product).id}`
+      ? `/api/admin/products/${initial!.id}`
       : "/api/admin/products";
     const method = isEdit ? "PUT" : "POST";
     const r = await fetch(endpoint, {
@@ -54,8 +54,17 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
       body: JSON.stringify(form),
     });
     if (!r.ok) {
-      const j = await r.json().catch(() => ({}));
-      setError(j?.message || "Save failed");
+      const j = (await r.json().catch(() => null)) as unknown;
+      let msg = "Save failed";
+      if (
+        j &&
+        typeof j === "object" &&
+        "message" in j &&
+        typeof (j as { message?: unknown }).message === "string"
+      ) {
+        msg = (j as { message: string }).message;
+      }
+      setError(msg);
       setSaving(false);
       return;
     }
@@ -70,7 +79,12 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
           <h2 className="text-lg font-semibold">
             {isEdit ? "Edit Product" : "New Product"}
           </h2>
-          <button onClick={onClose} className="px-2 py-1 rounded-lg hover:bg-gray-100">✕</button>
+          <button
+            onClick={onClose}
+            className="px-2 py-1 rounded-lg hover:bg-gray-100"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -96,7 +110,9 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
             <input
               type="number"
               value={form.price}
-              onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+              onChange={(e) =>
+                setForm({ ...form, price: Number(e.target.value) })
+              }
               className="border px-3 py-2 rounded-md w-full"
             />
           </div>
@@ -105,7 +121,9 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
             <input
               type="number"
               value={form.stock}
-              onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
+              onChange={(e) =>
+                setForm({ ...form, stock: Number(e.target.value) })
+              }
               className="border px-3 py-2 rounded-md w-full"
             />
           </div>
@@ -124,7 +142,12 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
             <label className="text-sm text-gray-600">Status</label>
             <select
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status: e.target.value as ProductInput["status"],
+                })
+              }
               className="border px-3 py-2 rounded-md w-full"
             >
               <option value="DRAFT">DRAFT</option>
@@ -134,10 +157,14 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
           </div>
 
           <div className="space-y-1 md:col-span-2">
-            <label className="text-sm text-gray-600">Category ID (optional)</label>
+            <label className="text-sm text-gray-600">
+              Category ID (optional)
+            </label>
             <input
               value={form.categoryId ?? ""}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value || null })}
+              onChange={(e) =>
+                setForm({ ...form, categoryId: e.target.value || null })
+              }
               className="border px-3 py-2 rounded-md w-full"
               placeholder="uuid của Category"
             />
@@ -147,7 +174,9 @@ export default function ProductForm({ initial, onClose, onSaved }: Props) {
         {error && <div className="px-4 pb-2 text-red-600 text-sm">{error}</div>}
 
         <div className="p-4 border-t flex items-center justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border">
+            Cancel
+          </button>
           <button
             onClick={submit}
             disabled={saving}

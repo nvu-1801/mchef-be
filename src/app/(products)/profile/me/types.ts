@@ -7,6 +7,6 @@ export type ProfileData = {
   skills: string[];
   role: string;
   certStatus?: string | null;
-  certificates?: any[];
+  certificates?: Record<string, unknown>[]; 
   updatedAt: string | null;
 };

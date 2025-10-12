@@ -80,8 +80,15 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
         router.replace(redirectTo); // → về Home
         router.refresh();
-      } catch (err: any) {
-        setMsg(humanize(err?.message));
+      } catch (err: unknown) {
+        const message =
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err &&
+          typeof (err as { message?: unknown }).message === "string"
+            ? (err as { message: string }).message
+            : String(err ?? "Có lỗi xảy ra");
+        setMsg(humanize(message));
         console.error("[auth]", err);
       }
     });

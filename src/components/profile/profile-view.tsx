@@ -6,6 +6,8 @@ import type { ProfileData } from "../../app/(products)/profile/me/types";
 import CertificateModal from "./CertificateModal";
 import { supabaseBrowser } from "../../libs/supabase/supabase-client";
 import MyCertificates from "./MyCertificates";
+import Image from "next/image";
+import Link from "next/link";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
@@ -19,9 +21,27 @@ type ApiMe = {
   skills: string[];
   role: string;
   certStatus: "none" | "pending" | "verified" | "rejected" | null;
-  certificates: any[];
+  certificates: Certificate[]; 
   createdAt: string | null;
   updatedAt: string | null;
+};
+
+export type Certificate = {
+  id?: string;
+  name?: string | null;
+  file_url?: string | null;
+  issued_by?: string | null;
+  issued_at?: string | null;
+  [k: string]: unknown;
+};
+
+export type ProfileViewProps = {
+  id: string;
+  fullName?: string | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  email?: string | null;
+  certificates?: Certificate[] | null;
 };
 
 export default function ProfileView({ initial }: { initial: ProfileData }) {
@@ -69,13 +89,20 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
           role: data.role ?? "user",
           certStatus: data.certStatus ?? null,
           certificates: Array.isArray(data.certificates)
-            ? data.certificates
+            ? (data.certificates as Certificate[])
             : [],
           updatedAt: data.updatedAt ?? null,
         };
         setProfile(next);
-      } catch (e: any) {
-        if (mounted) setLoadErr(e?.message || "Cannot load profile");
+      } catch (e: unknown) {
+        const msg =
+          typeof e === "object" &&
+          e !== null &&
+          "message" in e &&
+          typeof (e as { message?: unknown }).message === "string"
+            ? (e as { message: string }).message
+            : String(e ?? "Cannot load profile");
+        if (mounted) setLoadErr(msg);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -152,14 +179,15 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
       });
 
       if (!saveRes.ok) {
-        throw new Error(await saveRes.text());
+        const txt = await saveRes.text().catch(() => null);
+        throw new Error(txt || `Save failed (${saveRes.status})`);
       }
       const updated = await saveRes.json();
 
       setProfile((prev) => ({
         ...prev,
         certificates: Array.isArray(updated?.certificates)
-          ? updated.certificates
+          ? (updated.certificates as Certificate[])
           : prev.certificates,
         updatedAt:
           updated?.updatedAt ?? prev.updatedAt ?? new Date().toISOString(),
@@ -167,10 +195,17 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
 
       setShowCertModal(false);
       showToast({ type: "success", msg: "Certificate updated" });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg =
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : String(err ?? "Cannot upload certificate");
       showToast({
         type: "error",
-        msg: err?.message || "Cannot upload certificate",
+        msg,
       });
     } finally {
       setCertSubmitting(false);
@@ -206,6 +241,35 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
 
     return paths;
   }
+
+  // Handlers typed explicitly
+  const onDownloadCert = (cert: Certificate) => {
+    const url = cert.file_url;
+    if (!url) return;
+    // mở link trong tab mới
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const renderAvatar = () => {
+    if (profile.avatarUrl) {
+      return (
+        <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100">
+          <Image
+            src={profile.avatarUrl}
+            alt={profile.fullName ?? "avatar"}
+            width={80}
+            height={80}
+            className="object-cover"
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
+        {profile.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -390,10 +454,10 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
               My Certificates
             </div>
             <div className="mt-1 rounded-md bg-gray-50 px-3 py-2 text-sm">
-             <MyCertificates />
+              <MyCertificates />
             </div>
           </div>
-          
+
           <div className="md:col-span-2">
             <div className="text-xs uppercase tracking-wide text-gray-500">
               Last updated

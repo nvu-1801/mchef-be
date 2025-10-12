@@ -11,7 +11,7 @@ type RawProfile = {
   skills: string[] | null;
   role: string | null;
   cert_status: string | null;
-  certificates: any[] | null;
+  certificates: Record<string, unknown>[] | null;
   updated_at: string | null;
 } | null;
 
@@ -24,7 +24,7 @@ export type ProfileData = {
   skills: string[];
   role: string;
   certStatus?: string | null;
-  certificates?: any[];
+  certificates?: Record<string, unknown>[];
   updatedAt: string | null;
 };
 
@@ -35,10 +35,10 @@ function normalizeProfile(user: User, prof: RawProfile): ProfileData {
     fullName: prof?.display_name ?? null,
     avatarUrl: prof?.avatar_url ?? null,
     bio: prof?.bio ?? null,
-    skills: Array.isArray(prof?.skills) ? prof!.skills! : [],
+    skills: Array.isArray(prof?.skills) ? prof.skills : [],
     role: prof?.role ?? "user",
     certStatus: prof?.cert_status ?? null,
-    certificates: Array.isArray(prof?.certificates) ? prof!.certificates! : [],
+    certificates: Array.isArray(prof?.certificates) ? prof.certificates : [],
     updatedAt: prof?.updated_at ?? null,
   };
 }
@@ -60,7 +60,7 @@ export async function getCurrentUserAndProfileFromCookies() {
 
   return {
     user,
-    profile: normalizeProfile(user, prof),
+    profile: normalizeProfile(user, prof as RawProfile),
     error: profErr ?? null,
   };
 }
@@ -91,7 +91,7 @@ export async function getCurrentUserAndProfileFromBearer(token: string) {
 
   return {
     user,
-    profile: normalizeProfile(user, prof),
+    profile: normalizeProfile(user, prof as RawProfile),
     error: profErr ?? null,
   };
 }

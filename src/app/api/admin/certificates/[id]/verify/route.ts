@@ -2,64 +2,62 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-export const dynamic = "force-dynamic"; // (khuyên dùng khi có check auth)
+export const dynamic = "force-dynamic";
 
-type Params = { id: string };
+export async function POST(request: Request) {
+  // Extract id from the incoming URL to avoid typing the second param
+  const url = new URL(request.url);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const certIndex = parts.indexOf("certificates");
+  const id =
+    certIndex >= 0 && parts.length > certIndex + 1
+      ? parts[certIndex + 1]
+      : null;
 
-export async function POST(
-  req: Request,
-  { params }: { params: Params }
-) {
-  const { id } = params;
   if (!id) {
-    return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Missing id" },
+      { status: 400 }
+    );
   }
 
-  // parse body an toàn
-  let body: Record<string, unknown> = {};
-  try {
-    body = await req.json();
-  } catch {
-    // giữ body = {}
-  }
-
-  // map action hợp lệ
+  const body = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
   const actionRaw = typeof body.action === "string" ? body.action : "";
   const action =
-    actionRaw === "reject" ? "rejected" :
-    actionRaw === "approve" ? "approved" :
-    null;
-
+    actionRaw === "reject"
+      ? "rejected"
+      : actionRaw === "approve"
+      ? "approved"
+      : null;
   if (!action) {
     return NextResponse.json(
-      { ok: false, error: "Invalid action. Use 'approve' or 'reject'." },
+      { ok: false, error: "Invalid action" },
       { status: 400 }
     );
   }
 
   const sb = await supabaseServer();
-  const { data: { user }, error: authErr } = await sb.auth.getUser();
-  if (authErr || !user) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const {
+    data: { user },
+    error: authErr,
+  } = await sb.auth.getUser();
+  if (authErr || !user)
+    return NextResponse.json({ ok: false }, { status: 401 });
 
-  // (tuỳ chọn) kiểm tra quyền admin ở đây nếu có cột/claim role
+  // (optional) verify user.role === 'admin' here
 
-  // chuẩn bị payload update
-  const update: Record<string, unknown> = {
-    status: action,
-    reviewed_by: user.id,
-    reviewed_at: new Date().toISOString(),
-  };
-  if (action === "rejected" && typeof body.reason === "string") {
-    update.rejection_reason = body.reason.slice(0, 500);
-  }
-
-  const { error } = await sb.from("certificates").update(update).eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
+  const { error } = await sb
+    .from("certificates")
+    .update({ status: action })
+    .eq("id", id);
+  if (error)
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
 
   return NextResponse.json({ ok: true });
 }

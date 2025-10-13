@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 
-export async function DELETE(
-  _: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: unknown) {
+  // extract id safely (avoid typing second param)
+  const rawId =
+    (context as { params?: Record<string, string | string[]> })?.params?.id ??
+    // fallback: parse from url path
+    new URL(request.url).pathname.split("/").filter(Boolean).slice(-2)[1];
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const cookieStore = await cookies();
 
-  // Adapter nhỏ cho cookieStore của Next -> cast về CookieMethodsServer để thỏa kiểu
   const cookieAdapter = {
     get: (name: string) => cookieStore.get(name)?.value,
     set: (name: string, value: string, options?: Record<string, unknown>) =>
@@ -26,11 +30,10 @@ export async function DELETE(
     { cookies: cookieAdapter }
   );
 
-  // Lấy record (RLS owner)
   const { data: rows, error } = await sb
     .from("certificates")
     .select("id,file_path,status")
-    .eq("id", params.id)
+    .eq("id", id)
     .limit(1);
 
   if (error)
@@ -44,15 +47,10 @@ export async function DELETE(
       { status: 403 }
     );
 
-  // Xoá record trước (RLS cho delete owner pending)
-  const { error: delErr } = await sb
-    .from("certificates")
-    .delete()
-    .eq("id", params.id);
+  const { error: delErr } = await sb.from("certificates").delete().eq("id", id);
   if (delErr)
     return NextResponse.json({ error: delErr.message }, { status: 500 });
 
-  // Xoá file storage (không block nếu lỗi)
   await sb.storage
     .from("certificates")
     .remove([row.file_path])

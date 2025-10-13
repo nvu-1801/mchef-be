@@ -2,18 +2,17 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-export async function POST(
-  request: Request,
-  // use a broader, compatible type for params to satisfy Next's overloads
-  context: { params: Record<string, string | string[]> }
-) {
-  const rawId = context.params?.id;
+export async function POST(request: Request, context: unknown) {
+  // safe extract id (context may be different shapes during build/runtime)
+  const rawId = (context as { params?: Record<string, string | string[]> })
+    ?.params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
-  if (!id)
+  if (!id) {
     return NextResponse.json(
       { ok: false, error: "Missing id" },
       { status: 400 }
     );
+  }
 
   const body = (await request.json().catch(() => ({}))) as Record<
     string,
@@ -29,13 +28,12 @@ export async function POST(
   if (authErr || !user)
     return NextResponse.json({ ok: false }, { status: 401 });
 
-  // Optionally: check user.role === 'admin' here
+  // Optionally check user role === 'admin' here
 
   const { error } = await sb
     .from("certificates")
     .update({ status: action })
     .eq("id", id);
-
   if (error)
     return NextResponse.json(
       { ok: false, error: error.message },

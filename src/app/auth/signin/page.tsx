@@ -1,12 +1,16 @@
-import AuthTabs from "@/modules/auth/ui/AuthTabs";
-import AuthForm from "@/modules/auth/ui/AuthForm";
+import AuthTabs from "@/components/auth/AuthTabs";
+import AuthForm from "@/components/auth/AuthForm";
 
 type Props = {
-  searchParams: Promise<{ registered?: string; error?: string; redirect?: string }>;
+  searchParams: Promise<{
+    registered?: string;
+    error?: string;
+    redirect?: string;
+  }>;
 };
 
 export default async function SignInPage({ searchParams }: Props) {
-  const sp = await searchParams;                     
+  const sp = await searchParams;
   const justRegistered = sp.registered === "1";
   const err = sp.error ?? null;
 
@@ -27,7 +31,9 @@ export default async function SignInPage({ searchParams }: Props) {
         </div>
       )}
 
-      <h1 className="text-2xl font-semibold mb-4 text-gray-900">Welcome back</h1>
+      <h1 className="text-2xl font-semibold mb-4 text-gray-900">
+        Welcome back
+      </h1>
       <AuthForm mode="signin" />
       <p className="text-xs text-gray-500 mt-4">
         Bằng việc tiếp tục, bạn đồng ý với Chính sách & Điều khoản.

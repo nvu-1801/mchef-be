@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/libs/supabase/supabase-client";
-import { RealtimeChat } from "../realtime-chat";
+import { RealtimeChat } from "../chat/realtime-chat";
 
 type DBMsg = {
   id: string;

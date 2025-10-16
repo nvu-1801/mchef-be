@@ -9,10 +9,9 @@ export function GlobalLoading() {
   const timeoutRef = useRef<number | null>(null);
 
   const start = () => {
-    // clear timeout cũ
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     setLoading(true);
-    // Safety: auto tắt sau 10s nếu vì lý do gì đó không đổi pathname
+    // Safety: auto tắt sau 3s nếu vì lý do gì đó không đổi pathname
     timeoutRef.current = window.setTimeout(() => setLoading(false), 3000);
   };
 
@@ -24,13 +23,7 @@ export function GlobalLoading() {
   useEffect(() => {
     // Bắt click vào <a> nội bộ
     const onDocClick = (e: MouseEvent) => {
-      if (
-        (e as any).metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.altKey ||
-        (e as any).button === 1
-      )
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1)
         return;
 
       const el = e.target as Element | null;
@@ -46,19 +39,24 @@ export function GlobalLoading() {
       start();
     };
 
-    document.addEventListener("click", onDocClick, { capture: true });
+    const clickOptions: AddEventListenerOptions = { capture: true };
+    document.addEventListener("click", onDocClick, clickOptions);
 
     // Patch push/replace để bật loading khi điều hướng bằng code
-    const origPush = router.push;
-    router.push = ((...args: any) => {
+    const origPush = router.push.bind(router);
+    router.push = ((
+      ...args: Parameters<typeof origPush>
+    ): ReturnType<typeof origPush> => {
       start();
-      return origPush.apply(router, args);
+      return origPush(...args);
     }) as typeof router.push;
 
-    const origReplace = router.replace;
-    router.replace = ((...args: any) => {
+    const origReplace = router.replace.bind(router);
+    router.replace = ((
+      ...args: Parameters<typeof origReplace>
+    ): ReturnType<typeof origReplace> => {
       start();
-      return origReplace.apply(router, args);
+      return origReplace(...args);
     }) as typeof router.replace;
 
     // Khi user dùng back/forward
@@ -71,13 +69,10 @@ export function GlobalLoading() {
     };
     document.addEventListener("visibilitychange", onVis);
 
-    // Lần mount đầu không hiển thị overlay
     done();
 
     return () => {
-      document.removeEventListener("click", onDocClick, {
-        capture: true,
-      } as any);
+      document.removeEventListener("click", onDocClick, clickOptions);
       window.removeEventListener("popstate", onPopState);
       document.removeEventListener("visibilitychange", onVis);
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
@@ -85,14 +80,14 @@ export function GlobalLoading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🔑 TẮT loading bất cứ khi nào pathname đổi (điều hướng xong)
+  // TẮT loading bất cứ khi nào pathname đổi (điều hướng xong)
   useEffect(() => {
     if (loading) {
       // chờ 1 frame cho UI ổn định rồi tắt (mượt hơn)
       const id = requestAnimationFrame(() => setLoading(false));
       return () => cancelAnimationFrame(id);
     }
-  }, [pathname]); // <-- quan trọng
+  }, [pathname]);
 
   if (!loading) return null;
 

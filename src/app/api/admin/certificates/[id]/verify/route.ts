@@ -1,29 +1,63 @@
 // app/api/admin/certificates/[id]/verify/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { action, reason } = await req.json().catch(() => ({}));
-  if (!["approve","reject"].includes(action)) {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
+  // Extract id from the incoming URL to avoid typing the second param
+  const url = new URL(request.url);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const certIndex = parts.indexOf("certificates");
+  const id =
+    certIndex >= 0 && parts.length > certIndex + 1
+      ? parts[certIndex + 1]
+      : null;
+
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, error: "Missing id" },
+      { status: 400 }
+    );
   }
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
-  const updates =
-    action === "approve"
-      ? { status: "approved", reviewed_at: new Date().toISOString(), rejection_reason: null }
-      : { status: "rejected", reviewed_at: new Date().toISOString(), rejection_reason: reason ?? null };
+  const body = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const actionRaw = typeof body.action === "string" ? body.action : "";
+  const action =
+    actionRaw === "reject"
+      ? "rejected"
+      : actionRaw === "approve"
+      ? "approved"
+      : null;
+  if (!action) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid action" },
+      { status: 400 }
+    );
+  }
+
+  const sb = await supabaseServer();
+  const {
+    data: { user },
+    error: authErr,
+  } = await sb.auth.getUser();
+  if (authErr || !user)
+    return NextResponse.json({ ok: false }, { status: 401 });
+
+  // (optional) verify user.role === 'admin' here
 
   const { error } = await sb
     .from("certificates")
-    .update(updates)
-    .eq("id", params.id)
-    .in("status", ["pending"]);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    .update({ status: action })
+    .eq("id", id);
+  if (error)
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
 
   return NextResponse.json({ ok: true });
 }

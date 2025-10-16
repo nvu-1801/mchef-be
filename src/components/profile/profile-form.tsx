@@ -174,8 +174,15 @@ export default function ProfileForm({
           updatedAt: updated.updatedAt ?? prev.updatedAt ?? null,
         }));
       }
-    } catch (err: any) {
-      showToast({ type: "error", msg: err.message || "Something went wrong" });
+    } catch (err: unknown) {
+      const msg =
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : String(err ?? "Something went wrong");
+      showToast({ type: "error", msg });
     } finally {
       setSaving(false);
     }

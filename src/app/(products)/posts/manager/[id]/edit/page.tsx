@@ -18,8 +18,10 @@ type DishFormValues = {
 export default async function EditDishPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   const sb = await supabaseServer();
   const {
     data: { user },
@@ -37,7 +39,7 @@ export default async function EditDishPage({
     .select(
       "id,title,category_id,cover_image_url,diet,time_minutes,servings,tips,published,created_by"
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !dishData || dishData.created_by !== user.id) {

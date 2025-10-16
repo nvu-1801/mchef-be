@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabaseBrowser } from "../../../libs/supabase/supabase-client";
+import { supabaseBrowser } from "../../libs/supabase/supabase-client";
 
 function humanize(message?: string) {
   const m = (message || "").toLowerCase();
@@ -16,6 +16,12 @@ function humanize(message?: string) {
     return "Captcha đang bật. Hãy tắt Captcha hoặc tích hợp hCaptcha.";
   return message || "Có lỗi xảy ra.";
 }
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:4000");
 
 export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
   const [email, setEmail] = useState("");
@@ -38,34 +44,31 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
     startTransition(async () => {
       try {
         if (mode === "signup") {
-          const origin = window.location.origin;
+          const emailRedirectTo = `${BASE_URL}/auth/callback?next=${encodeURIComponent(
+            redirectTo
+          )}`;
+
           const { data, error } = await sb.auth.signUp({
             email,
             password,
-            options: {
-              // Sau khi user bấm link xác nhận trong email, quay về app để set session
-              emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
-                redirectTo
-              )}`,
-            },
+            options: { emailRedirectTo },
           });
           if (error) throw error;
 
-          // Nếu dự án tắt email confirmation -> Supabase trả session ngay
+          // Nếu project tắt email confirmation -> Supabase trả session ngay
           if (data.session) {
+            // (tuỳ) gọi API ensure-admin, refresh, rồi điều hướng
             await fetch("/api/auth/ensure-admin", { method: "POST" }).catch(
               () => {}
             );
             await sb.auth.refreshSession();
-            router.replace(redirectTo);
-            router.refresh();
+            router.replace(redirectTo || "/home");
+            router.refresh?.();
             return;
           }
 
-          // Ngược lại (bật email confirmation): show thông báo xác nhận
-          setConfirmNotice(
-            `Đã gửi email xác nhận đến ${email}. Vui lòng kiểm tra hộp thư và bấm vào liên kết để kích hoạt tài khoản.`
-          );
+          // Ngược lại: yêu cầu người dùng check email để xác nhận
+          setConfirmNotice?.("Vui lòng kiểm tra email để xác nhận tài khoản.");
           return;
         }
 
@@ -80,8 +83,15 @@ export default function AuthForm({ mode }: { mode: "signin" | "signup" }) {
 
         router.replace(redirectTo); // → về Home
         router.refresh();
-      } catch (err: any) {
-        setMsg(humanize(err?.message));
+      } catch (err: unknown) {
+        const message =
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err &&
+          typeof (err as { message?: unknown }).message === "string"
+            ? (err as { message: string }).message
+            : String(err ?? "Có lỗi xảy ra");
+        setMsg(humanize(message));
         console.error("[auth]", err);
       }
     });

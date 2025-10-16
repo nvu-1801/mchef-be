@@ -62,7 +62,6 @@ export default async function ProductsGroupLayout({
                 {/* Center nav */}
                 <nav className="hidden md:flex md:flex-row flex-1 justify-center items-center gap-1 text-[15px] font-semibold text-gray-700">
                   {[
-                    { href: "/home", label: "Cửa hàng" },
                     { href: "/about", label: "Giới thiệu" },
                     { href: "/faq", label: "Hỏi đáp" },
                     { href: "/contact", label: "Liên hệ" },

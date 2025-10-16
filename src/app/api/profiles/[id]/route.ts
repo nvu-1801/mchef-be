@@ -2,10 +2,15 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-type Params = { params: { id: string } };
+export async function GET(request: Request) {
+  // extract id from request URL to avoid incompatible second-param typing
+  const url = new URL(request.url);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const idx = parts.indexOf("profiles");
+  const id = idx >= 0 && parts.length > idx + 1 ? parts[idx + 1] : null;
 
-export async function GET(_req: Request, { params }: Params) {
-  const { id } = params;
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const sb = await supabaseServer();
 
   const { data, error } = await sb
@@ -24,7 +29,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Public profile: ẩn email, role, cert_status, certificates
+  // Public profile: hide email, role, cert_status, certificates
   return NextResponse.json({
     id: data.id,
     fullName: data.display_name ?? "",

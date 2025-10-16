@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-type Params = { params: { id: string } };
-
 const UpdateDish = z.object({
   title: z.string().min(1).max(160).optional(),
   slug: z
@@ -15,7 +13,7 @@ const UpdateDish = z.object({
     .optional(),
   cover_image_url: z.string().url().optional(),
   category_id: z.string().uuid().optional(),
-  diet: z.string().max(30).optional(), // đổi sang enum nếu DB dùng enum
+  diet: z.string().max(30).optional(),
   time_minutes: z.number().int().min(0).max(100000).optional(),
   servings: z.number().int().min(1).max(1000).optional(),
   tips: z.string().max(5000).optional(),
@@ -26,8 +24,18 @@ const UpdateDish = z.object({
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(_req: Request, { params }: Params) {
-  const identifier = params.id;
+function extractIdFromRequest(req: Request): string | null {
+  const url = new URL(req.url);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const idx = parts.indexOf("dishes");
+  return idx >= 0 && parts.length > idx + 1 ? parts[idx + 1] : null;
+}
+
+export async function GET(request: Request) {
+  const identifier = extractIdFromRequest(request);
+  if (!identifier)
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const sb = await supabaseServer();
 
   const byId = UUID_RE.test(identifier);
@@ -74,8 +82,11 @@ export async function GET(_req: Request, { params }: Params) {
   return NextResponse.json(data);
 }
 
-export async function PUT(req: Request, { params }: Params) {
-  const identifier = params.id;
+export async function PUT(request: Request) {
+  const identifier = extractIdFromRequest(request);
+  if (!identifier)
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const sb = await supabaseServer();
   const {
     data: { user },
@@ -84,7 +95,6 @@ export async function PUT(req: Request, { params }: Params) {
 
   const byId = UUID_RE.test(identifier);
 
-  // Lấy dish để kiểm quyền
   const { data: existed, error: fErr } = await sb
     .from("dishes")
     .select("id, created_by")
@@ -99,7 +109,6 @@ export async function PUT(req: Request, { params }: Params) {
   if (!existed)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Quyền: admin hoặc chủ sở hữu (created_by)
   const { data: prof } = await sb
     .from("profiles")
     .select("role")
@@ -110,7 +119,7 @@ export async function PUT(req: Request, { params }: Params) {
   if (!isAdmin && !isOwner)
     return new NextResponse("Forbidden", { status: 403 });
 
-  const json = await req.json().catch(() => ({}));
+  const json = (await request.json().catch(() => ({}))) as unknown;
   const parsed = UpdateDish.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
@@ -142,8 +151,11 @@ export async function PUT(req: Request, { params }: Params) {
   return NextResponse.json(data);
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
-  const identifier = params.id;
+export async function DELETE(request: Request) {
+  const identifier = extractIdFromRequest(request);
+  if (!identifier)
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
   const sb = await supabaseServer();
   const {
     data: { user },
@@ -152,7 +164,6 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   const byId = UUID_RE.test(identifier);
 
-  // Chỉ admin được xoá (giữ nguyên theo yêu cầu). Nếu muốn cho owner xoá, lấy created_by và so sánh tương tự PUT.
   const { data: prof } = await sb
     .from("profiles")
     .select("role")

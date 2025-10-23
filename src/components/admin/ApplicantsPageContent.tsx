@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import React, { useState, useMemo } from "react";
 import ApplicantCard from "@/components/chef/ApplicantCard";
 
@@ -20,9 +19,9 @@ type ProfileRow = {
 
 type CertificateItem = {
   id?: string;
-  user_id?: string;
+  user_id?: string | null; // ✅ Changed from string | undefined to string | null
   userId?: string;
-  title?: string;
+  title?: string | null;
   file_path?: string | null;
   mime_type?: string | null;
   signedUrl?: string | null;
@@ -121,22 +120,23 @@ export default function ApplicantsPageContent({
               Filter by certificate
             </label>
             <div className="flex gap-2">
-              {[{
-                value: "all" as const,
-                label: "All",
-                icon: "📋",
-              },
-              {
-                value: "with-cert" as const,
-                label: "With cert",
-                icon: "✅",
-              },
-              {
-                value: "no-cert" as const,
-                label: "No cert",
-                icon: "❌",
-              },
-            ].map((opt) => (
+              {[
+                {
+                  value: "all" as const,
+                  label: "All",
+                  icon: "📋",
+                },
+                {
+                  value: "with-cert" as const,
+                  label: "With cert",
+                  icon: "✅",
+                },
+                {
+                  value: "no-cert" as const,
+                  label: "No cert",
+                  icon: "❌",
+                },
+              ].map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setFilter(opt.value)}

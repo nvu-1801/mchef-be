@@ -11,7 +11,7 @@ export default function AddDishButton({
   action,
 }: {
   categories: Category[];
-  action: (formData: FormData) => Promise<void> | void; // server action (Promise<void>)
+  action: (formData: FormData) => Promise<void> | void;
 }) {
   const [open, setOpen] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
@@ -29,43 +29,56 @@ export default function AddDishButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-sm px-3 py-1.5 rounded-full border shadow-sm hover:shadow bg-black text-white hover:bg-black/90"
+        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl transition"
       >
-        + Đăng món mới
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Đăng món mới
       </button>
 
       <dialog
         ref={dialogRef}
-        // backdrop mờ + dialog bo tròn
-        className="backdrop:bg-black/40 rounded-2xl w-[92vw] max-w-2xl p-0"
+        className="backdrop:bg-black/60 backdrop:backdrop-blur-sm rounded-3xl w-[92vw] max-w-2xl p-0 shadow-2xl
+                   fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                   m-0 max-h-[90vh]"
         onClose={() => {
           setOpen(false);
           setSubmitted(false);
         }}
       >
-        {/* card container để kiểm soát chiều cao + cuộn nội dung */}
-        <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-2xl border bg-white shadow-xl">
-          {/* header dính trên */}
-          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-rose-50 to-sky-50">
-            <h2 className="font-semibold text-gray-900">Đăng món mới</h2>
+        <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-3xl border bg-white">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-indigo-50 via-violet-50 to-purple-50">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-lg shadow-lg shadow-indigo-500/30">
+                🍳
+              </div>
+              <h2 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Đăng món mới
+              </h2>
+            </div>
             <button
-              className="rounded-lg border px-2 py-1 text-sm hover:bg-gray-50"
+              className="rounded-xl border-2 border-gray-200 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 transition"
               onClick={() => setOpen(false)}
               aria-label="Đóng"
             >
-              Đóng
+              ✕ Đóng
             </button>
           </div>
 
-          {/* body có thể cuộn */}
-          <div className="px-4 py-4 overflow-y-auto">
+          {/* Body */}
+          <div className="px-6 py-6 overflow-y-auto">
             <DishForm
               action={async (fd) => {
-                // gọi server action thật
                 await action(fd);
-                // đánh dấu đã submit để auto-close
                 setSubmitted(true);
-                // đóng & refresh sau một nhịp nhỏ cho cảm giác mượt
                 setTimeout(() => {
                   setOpen(false);
                   router.refresh();

@@ -1,17 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import type { Applicant } from "./ApplicantsList";
 
 type AdminCert = {
   id?: string;
-  user_id?: string;
-  title?: string;
+  user_id?: string | null; // ✅ Changed to match CertificateItem
+  title?: string | null;
   file_path?: string | null;
   mime_type?: string | null;
   signedUrl?: string | null;
   created_at?: string | null;
   [k: string]: unknown;
+};
+
+export type Applicant = {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  skills: string[] | null;
+  cert_status: string | null;
+  certificates: string[] | null;
+  adminCertificates?: AdminCert[] | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 function makePreviewUrl(cert: AdminCert): string | null {
@@ -56,7 +69,9 @@ export default function ApplicantCard({ applicant }: { applicant: Applicant }) {
             { cache: "no-store" }
           );
           if (!res.ok) return { key: c.file_path!, url: null };
-          const j = await res.json().catch(() => null);
+          const j = (await res.json().catch(() => null)) as {
+            signedUrl?: string;
+          } | null;
           return { key: c.file_path!, url: j?.signedUrl ?? null };
         } catch {
           return { key: c.file_path!, url: null };
@@ -82,7 +97,7 @@ export default function ApplicantCard({ applicant }: { applicant: Applicant }) {
       ? adminCerts.map((c) => {
           const direct = makePreviewUrl(c);
           const fallback = c.file_path ? signedMap[c.file_path] ?? null : null;
-          return { url: direct ?? fallback, label: c.title };
+          return { url: direct ?? fallback, label: c.title ?? undefined };
         })
       : profileCerts.map((u) => ({ url: typeof u === "string" ? u : null }));
 

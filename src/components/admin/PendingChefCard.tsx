@@ -3,7 +3,19 @@
 import React from "react";
 import Link from "next/link";
 
-export default function PendingChefCard({ chef }: { chef: any }) {
+type PendingChef = {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  rating_avg: number | null;
+  dishes_count: number | null;
+  created_at: string | null;
+  [key: string]: unknown;
+};
+
+export default function PendingChefCard({ chef }: { chef: PendingChef }) {
   const avatar =
     chef.avatar_url && /^https?:\/\//i.test(chef.avatar_url)
       ? chef.avatar_url
@@ -86,29 +98,27 @@ export default function PendingChefCard({ chef }: { chef: any }) {
 
         {/* Stats */}
         <div className="flex flex-wrap gap-2">
-          {[
-            {
-              icon: "⭐",
-              value: chef.rating_avg ? Number(chef.rating_avg).toFixed(1) : "—",
-              gradient: "from-amber-50 to-orange-50 border-amber-200",
-            },
-            {
-              icon: "🥘",
-              value: `${chef.dishes_count ?? 0}`,
-              label: "dishes",
-              gradient: "from-rose-50 to-pink-50 border-rose-200",
-            },
-            {
-              icon: "📅",
-              value: chef.created_at
-                ? new Date(chef.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                : "—",
-              gradient: "from-blue-50 to-cyan-50 border-blue-200",
-            },
-          ].map((stat, i) => (
+          {[{
+            icon: "⭐",
+            value: chef.rating_avg ? Number(chef.rating_avg).toFixed(1) : "—",
+            gradient: "from-amber-50 to-orange-50 border-amber-200",
+          },
+          {
+            icon: "🥘",
+            value: `${chef.dishes_count ?? 0}`,
+            label: "dishes",
+            gradient: "from-rose-50 to-pink-50 border-rose-200",
+          },
+          {
+            icon: "📅",
+            value: chef.created_at
+              ? new Date(chef.created_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              : "—",
+            gradient: "from-blue-50 to-cyan-50 border-blue-200",
+          }].map((stat, i) => (
             <div
               key={i}
               className={`inline-flex items-center gap-2 bg-gradient-to-r ${stat.gradient} border px-3 py-1.5 rounded-lg text-xs font-medium`}

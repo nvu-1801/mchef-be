@@ -7,6 +7,23 @@ import PendingChefCard from "@/components/admin/PendingChefCard";
 
 export const revalidate = 60;
 
+type ChefOverview = {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  is_active: boolean | null;
+  can_post: boolean | null;
+  verified_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  dishes_count: number | null;
+  comments_count: number | null;
+};
+
 export default async function ChefsPublicPage() {
   const sb = await supabaseServer();
 
@@ -42,7 +59,7 @@ export default async function ChefsPublicPage() {
     );
   }
 
-  const items = (data ?? []) as any[];
+  const items = (data ?? []) as ChefOverview[];
   const verified = items.filter((c) => !!c.is_active && !!c.verified_at);
   const pending = items.filter((c) => !c.is_active || !c.verified_at);
 
@@ -104,36 +121,38 @@ export default async function ChefsPublicPage() {
       <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
         {/* Stats cards */}
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {[{
-            label: "Total Chefs",
-            value: items.length,
-            icon: "👨‍🍳",
-            gradient: "from-blue-500 to-cyan-500",
-          },
-          {
-            label: "Verified",
-            value: verified.length,
-            icon: "✅",
-            gradient: "from-emerald-500 to-teal-500",
-          },
-          {
-            label: "Pending",
-            value: pending.length,
-            icon: "⏳",
-            gradient: "from-amber-500 to-orange-500",
-          },
-          {
-            label: "Avg Rating",
-            value: (
-              (items.reduce(
-                (s, c) => s + (c.rating_avg || 0),
-                0
-              ) / items.length) ||
-              0
-            ).toFixed(1),
-            icon: "⭐",
-            gradient: "from-violet-500 to-purple-500",
-          }].map((stat, i) => (
+          {[
+            {
+              label: "Total Chefs",
+              value: items.length,
+              icon: "👨‍🍳",
+              gradient: "from-blue-500 to-cyan-500",
+            },
+            {
+              label: "Verified",
+              value: verified.length,
+              icon: "✅",
+              gradient: "from-emerald-500 to-teal-500",
+            },
+            {
+              label: "Pending",
+              value: pending.length,
+              icon: "⏳",
+              gradient: "from-amber-500 to-orange-500",
+            },
+            {
+              label: "Avg Rating",
+              value:
+                items.length > 0
+                  ? (
+                      items.reduce((s, c) => s + (c.rating_avg || 0), 0) /
+                      items.length
+                    ).toFixed(1)
+                  : "0.0",
+              icon: "⭐",
+              gradient: "from-violet-500 to-purple-500",
+            },
+          ].map((stat, i) => (
             <div key={i} className="relative group">
               <div
                 className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition blur-xl`}

@@ -1,6 +1,8 @@
 // src/libs/auth/ensure-admin.ts
 // Dùng chung cho client (supabaseBrowser) và server (supabaseServer)
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 export type AdminCheckResult = {
   user: { id: string; email?: string | null };
 };
@@ -13,6 +15,24 @@ export class AdminAuthError extends Error {
   }
 }
 
+type UserMetadata = {
+  role?: unknown;
+  roles?: unknown;
+  [key: string]: unknown;
+};
+
+type AuthUser = {
+  id: string;
+  email?: string | null;
+  app_metadata?: UserMetadata;
+  [key: string]: unknown;
+};
+
+type ProfileRow = {
+  role?: unknown;
+  [key: string]: unknown;
+};
+
 /**
  * Kiểm tra quyền admin.
  * - Ưu tiên profiles.is_admin (boolean)
@@ -22,25 +42,36 @@ export class AdminAuthError extends Error {
  * @returns user { id, email }
  * @throws AdminAuthError("NOT_AUTHENTICATED" | "NOT_ADMIN" | "DB_ERROR")
  */
-export async function ensureAdmin(sb: any): Promise<AdminCheckResult> {
+export async function ensureAdmin(
+  sb: SupabaseClient
+): Promise<AdminCheckResult> {
   // đảm bảo session được refresh nếu cần
   await sb.auth.getSession().catch(() => {});
 
-  const { data: { user }, error: userErr } = await sb.auth.getUser();
+  const {
+    data: { user },
+    error: userErr,
+  } = await sb.auth.getUser();
   if (userErr) throw new AdminAuthError("DB_ERROR", userErr.message);
   if (!user) throw new AdminAuthError("NOT_AUTHENTICATED");
 
+  const authUser = user as unknown as AuthUser;
+
   // Fallback 1: app_metadata
-  const meta = (user as any)?.app_metadata || {};
-  const metaRole = (meta.role as string | undefined)?.toLowerCase?.();
-  const metaRoles = Array.isArray(meta.roles) ? meta.roles.map((r: any) => String(r).toLowerCase()) : [];
+  const meta = authUser.app_metadata ?? {};
+  const metaRole = typeof meta.role === "string" ? meta.role.toLowerCase() : "";
+  const metaRoles = Array.isArray(meta.roles)
+    ? meta.roles.map((r) =>
+        typeof r === "string" ? r.toLowerCase() : String(r).toLowerCase()
+      )
+    : [];
   const metaIsAdmin = metaRole === "admin" || metaRoles.includes("admin");
 
-  // Chính: profiles.is_admin
+  // Chính: profiles.role
   const { data: prof, error: profErr } = await sb
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", authUser.id)
     .single();
 
   if (profErr && profErr.code !== "PGRST116") {
@@ -48,8 +79,12 @@ export async function ensureAdmin(sb: any): Promise<AdminCheckResult> {
     throw new AdminAuthError("DB_ERROR", profErr.message);
   }
 
-  const isAdmin = (prof?.role === "admin") || metaIsAdmin;
+  const profileData = prof as unknown as ProfileRow | null;
+  const profileRole =
+    typeof profileData?.role === "string" ? profileData.role.toLowerCase() : "";
+
+  const isAdmin = profileRole === "admin" || metaIsAdmin;
   if (!isAdmin) throw new AdminAuthError("NOT_ADMIN");
 
-  return { user: { id: user.id, email: user.email } };
+  return { user: { id: authUser.id, email: authUser.email } };
 }

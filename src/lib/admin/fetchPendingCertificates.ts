@@ -37,7 +37,6 @@ export default async function fetchPendingCertificates(): Promise<
       }
     );
     if (!res.ok) throw new Error(`API returned ${res.status}`);
-
     const payload: unknown = await res.json().catch(() => null);
 
     if (
@@ -48,7 +47,6 @@ export default async function fetchPendingCertificates(): Promise<
     ) {
       return payload.items as PendingCertificate[];
     }
-
     return [];
   } catch (e) {
     // fallback query directly from DB

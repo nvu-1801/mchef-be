@@ -31,29 +31,44 @@ export default function AdminDropdown({ isAdmin }: { isAdmin: boolean }) {
         </svg>
       </button>
 
-     {open && (
-  <div className="absolute left-0 top-full -mt-0.2 w-48 rounded-xl border bg-white shadow-lg z-50">
-    <ul className="flex flex-col py-1 text-sm">
-      <li>
-        <Link
-          href="/admin/products"
-          className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
-        >
-          Manager Product
-        </Link>
-      </li>
-      <li>
-        <Link
-          href="/admin/dashboard"
-          className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
-        >
-          Dashboard
-        </Link>
-      </li>
-    </ul>
-  </div>
-)}
-
+      {open && (
+        <div className="absolute left-0 top-full -mt-0.2 w-48 rounded-xl border bg-white shadow-lg z-50">
+          <ul className="flex flex-col py-1 text-sm">
+            <li>
+              <Link
+                href="/admin/dashboard"
+                className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+              >
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/chefs"
+                className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+              >
+                Chefs Profiles
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/admin/chefs/applicants"
+                className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+              >
+                Chefs Applicants
+              </Link>
+            </li>
+             <li>
+              <Link
+                href="/admin/support"
+                className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
+              >
+                Support chat
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

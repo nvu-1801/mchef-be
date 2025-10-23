@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import SignOutButton from "@/components/auth/SignOutButton";
 import { GlobalLoading } from "@/components/common/GlobalLoading";
 import AdminDropdown from "@/components/common/AdminDropdown";
@@ -11,10 +11,16 @@ export default async function ProductsGroupLayout({
   children: React.ReactNode;
 }) {
   const sb = await supabaseServer();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
 
+  const {
+    data: { session },
+    error,
+  } = await sb.auth.getSession();
+
+  const user = session?.user ?? null;
+  const accessToken = session?.access_token ?? null;
+
+  console.log("Access Token:", accessToken);
   // đọc role từ profiles
   let isAdmin = false;
   if (user) {
@@ -46,17 +52,16 @@ export default async function ProductsGroupLayout({
                   className="leading-tight shrink-0 px-3 py-2 rounded-xl transition group hover:bg-gray-50"
                 >
                   <div className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 via-violet-600 to-sky-600 group-hover:from-fuchsia-500 group-hover:to-sky-500">
-                    Run Gear
+                    Master Chef
                   </div>
                   <div className="text-xs text-gray-500 group-hover:text-sky-600 transition">
-                    Phong cách & cá tính
+                    Sức khoẻ là vàng
                   </div>
                 </Link>
 
                 {/* Center nav */}
                 <nav className="hidden md:flex md:flex-row flex-1 justify-center items-center gap-1 text-[15px] font-semibold text-gray-700">
                   {[
-                    { href: "/home", label: "Cửa hàng" },
                     { href: "/about", label: "Giới thiệu" },
                     { href: "/faq", label: "Hỏi đáp" },
                     { href: "/contact", label: "Liên hệ" },
@@ -83,22 +88,45 @@ export default async function ProductsGroupLayout({
                 <div className="flex flex-row items-center gap-2 md:gap-3 shrink-0">
                   <AdminDropdown isAdmin={isAdmin} />
 
-                  {/* My Posts button – luôn hiển thị */}
+                  {/* Upgrade Button */}
                   <Link
-                    href="/posts/manager"
-                    className="flex items-center gap-2 p-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 hover:text-black"
+                    href="/upgrade"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold
+             text-violet-600 hover:bg-violet-50 transition"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="w-5 h-5"
+                      className="w-5 h-5 text-violet-500"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
                     >
-                      <path d="M3 7h18M3 12h18M3 17h18" />
+                      <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span className="hidden sm:inline">My Posts</span>
+                    <span className="hidden sm:inline bg-gradient-to-r from-violet-500 to-pink-500 text-transparent bg-clip-text font-bold">
+                      Upgrade
+                    </span>
+                  </Link>
+
+                  {/* My Posts Button */}
+                  <Link
+                    href="/posts/manager"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-5 h-5 text-gray-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M5 3h14a2 2 0 0 1 2 2v16l-4-2-4 2-4-2-4 2V5a2 2 0 0 1 2-2z" />
+                    </svg>
+                    <span className="hidden sm:inline font-medium">
+                      My Posts
+                    </span>
                   </Link>
 
                   {/* Profile button (NEW) */}

@@ -16,17 +16,6 @@ import {
   Apple
 } from "lucide-react";
 
-/**
- * Footer Component
- * - Beautiful gradient border & soft glass background
- * - 4 navigation columns (Shop, Learn, Company, Support)
- * - Newsletter subscribe with basic validation
- * - Social icons
- * - Language & Currency selectors
- * - Contact / Store hours
- * - Payment badges
- * - Back-to-top button
- */
 export default function Footer({ brand = "Shop" }: { brand?: string }) {
   const [email, setEmail] = React.useState("");
   const [message, setMessage] = React.useState<string | null>(null);

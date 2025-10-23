@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 import DishForm from "@/components/dishes/DishForm";
 import { updateDish } from "../../actions";
 
@@ -18,8 +18,10 @@ type DishFormValues = {
 export default async function EditDishPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   const sb = await supabaseServer();
   const {
     data: { user },
@@ -37,7 +39,7 @@ export default async function EditDishPage({
     .select(
       "id,title,category_id,cover_image_url,diet,time_minutes,servings,tips,published,created_by"
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !dishData || dishData.created_by !== user.id) {
@@ -63,7 +65,7 @@ export default async function EditDishPage({
         categories={categories}
         defaultValues={dish}
         submitText="Cập nhật"
-        action={updateDish.bind(null, dish.id)}  
+        action={updateDish.bind(null, dish.id)}
       />
     </div>
   );

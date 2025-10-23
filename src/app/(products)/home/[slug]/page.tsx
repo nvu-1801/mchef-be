@@ -1,20 +1,48 @@
 import { notFound } from "next/navigation";
 import {
-  getDishBySlug,
-  dishImageUrl, // OK dùng ở server
+  dishImageUrl,
+  getDishFullBySlug,
 } from "@/modules/dishes/service/dish.service";
 import DishDetailClient from "./dish-detail.client";
-type Props = { params: { slug: string } };
+
+type Props = { params: Promise<{ slug: string }> };
 
 export default async function DishDetailPage({ params }: Props) {
-  const { slug } = params;
+  const { slug } = await params;
 
   try {
-    const dish = await getDishBySlug(slug); // { id,title,slug,cover_image_url,diet,time_minutes,servings,category_id,tips }
-    const coverUrl = dishImageUrl(dish) ?? "/placeholder.png"; // TÍNH Ở SERVER
-    return <DishDetailClient dish={dish} coverUrl={coverUrl} />;
-  } catch (e: any) {
-    if (e?.message === "NOT_FOUND") return notFound();
+    const dish = await getDishFullBySlug(slug); // lấy đủ các field join
+    const coverUrl =
+      dishImageUrl(dish) ?? dish.cover_image_url ?? "/placeholder.png";
+
+    const ratings = dish.ratings ?? [];
+    const ratingCount = ratings.length;
+    const ratingAvg = ratingCount
+      ? Number(
+          (
+            ratings.reduce((s, r) => s + (r.stars || 0), 0) / ratingCount
+          ).toFixed(1)
+        )
+      : 0;
+
+    return (
+      <DishDetailClient
+        dish={dish}
+        coverUrl={coverUrl}
+        ratingAvg={ratingAvg}
+        ratingCount={ratingCount}
+      />
+    );
+  } catch (e: unknown) {
+    const message =
+      typeof e === "object" &&
+      e !== null &&
+      "message" in e &&
+      typeof (e as { message?: unknown }).message === "string"
+        ? (e as { message: string }).message
+        : undefined;
+
+    if (message === "NOT_FOUND") return notFound();
     throw e;
   }
 }

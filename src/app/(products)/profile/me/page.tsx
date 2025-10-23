@@ -1,18 +1,22 @@
 // app/profile/me/page.tsx
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/db/supabase/supabase-server";
-import ProfileView from "./profile-view";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
+import ProfileView from "../../../../components/profile/profile-view";
 
 export const revalidate = 0;
 
 export default async function ProfileMePage() {
   const sb = await supabaseServer();
-  const { data: { user } } = await sb.auth.getUser();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
   if (!user) redirect("/auth/signin?next=/profile/me");
 
   const { data: prof } = await sb
     .from("profiles")
-    .select("id, email, display_name, avatar_url, bio, skills, role, updated_at, cert_status, certificates")
+    .select(
+      "id, email, display_name, avatar_url, bio, skills, role, updated_at, cert_status, certificates"
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -35,7 +39,9 @@ export default async function ProfileMePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/15 via-fuchsia-500/15 to-emerald-500/15" />
         <div className="relative px-6 py-6">
           <h1 className="text-2xl font-semibold">Your Profile</h1>
-          <p className="mt-1 text-sm text-gray-600">View and update your personal information.</p>
+          <p className="mt-1 text-sm text-gray-600">
+            View and update your personal information.
+          </p>
         </div>
       </div>
 

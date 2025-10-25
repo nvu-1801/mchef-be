@@ -194,7 +194,7 @@ function ChefCard({ c }: { c: PublicChef }) {
         {/* Bio */}
         {c.bio && (
           <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed italic">
-            "{c.bio}"
+            &ldquo;{c.bio}&rdquo;
           </p>
         )}
 

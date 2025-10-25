@@ -293,7 +293,7 @@ export default async function ChefDetailPage({
                 <div className="rounded-2xl bg-gray-50 p-8 text-center">
                   <div className="text-4xl mb-3">🍳</div>
                   <p className="text-sm text-gray-600">
-                    This chef hasn't published any dishes yet.
+                    This chef hasn&rsquo;t published any dishes yet.
                   </p>
                 </div>
               ) : (

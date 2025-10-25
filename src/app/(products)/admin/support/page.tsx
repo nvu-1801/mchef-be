@@ -83,13 +83,25 @@ export default function AdminSupportPage() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "support_messages" },
         (payload) => {
-          const d = payload.new as SessionRow;
-          if (!d?.session_id) return;
-          upsertAndBumpTop({
-            session_id: d.session_id,
-            user_id: (d as any).user_id ?? null,
-            created_at: (d as any).created_at,
-          });
+          const d = payload.new as unknown;
+          if (
+            typeof d === "object" &&
+            d !== null &&
+            "session_id" in d &&
+            typeof d.session_id === "string"
+          ) {
+            upsertAndBumpTop({
+              session_id: d.session_id,
+              user_id:
+                "user_id" in d && typeof d.user_id === "string"
+                  ? d.user_id
+                  : null,
+              created_at:
+                "created_at" in d && typeof d.created_at === "string"
+                  ? d.created_at
+                  : undefined,
+            });
+          }
         }
       )
       .subscribe();
@@ -119,7 +131,9 @@ export default function AdminSupportPage() {
           />
         ) : (
           <div className="h-full grid place-items-center text-sm text-gray-500 p-4">
-            {!ready ? "Đang kiểm tra quyền admin…" : "Không có quyền truy cập trang admin."}
+            {!ready
+              ? "Đang kiểm tra quyền admin…"
+              : "Không có quyền truy cập trang admin."}
           </div>
         )}
       </div>

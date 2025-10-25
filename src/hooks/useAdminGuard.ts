@@ -3,11 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { ensureAdmin, AdminAuthError } from "@/libs/auth/ensure-admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Options = {
-  supabaseClient: any;                 // supabaseBrowser()
-  redirectTo?: string;                 // default: /auth/sign-in
-  next?: string;                       // default: window.location.pathname + search
+  supabaseClient: SupabaseClient; // Typed Supabase client
+  redirectTo?: string; // default: /auth/sign-in
+  next?: string; // default: window.location.pathname + search
   onFail?: (error: AdminAuthError) => void;
 };
 
@@ -19,7 +20,10 @@ export function useAdminGuard({
 }: Options) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<AdminAuthError | null>(null);
-  const [user, setUser] = useState<{ id: string; email?: string | null } | null>(null);
+  const [user, setUser] = useState<{
+    id: string;
+    email?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -29,7 +33,7 @@ export function useAdminGuard({
         if (!mounted) return;
         setUser(res.user);
         setReady(true);
-      } catch (e) {
+      } catch (e: unknown) {
         const err = e as AdminAuthError;
         if (!mounted) return;
         setError(err);
@@ -48,7 +52,9 @@ export function useAdminGuard({
         }
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [supabaseClient, redirectTo, next, onFail]);
 
   return { ready, error, user };

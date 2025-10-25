@@ -71,31 +71,50 @@ export default async function HomePage({
   };
 
   return (
-    // mở rộng chiều rộng layout
-    <main className="max-w-7xl mx-auto px-4 py-10">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">Món ăn</h1>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+          Món ăn
+        </h1>
       </div>
 
       {/* Tabs filter */}
-      <div className="sticky top-27 z-30 -mx-4 px-4 py-4 mb-6 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/50 border-b">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {Tab("Tất cả", "all")}
-          {cats.map((c) => Tab(c.name, c.slug))}
+      <div className="sticky top-28 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-6 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+        <div className="flex items-center gap-3">
+          {/* On small screens show horizontal scrollable tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <div className="flex gap-2">
+              {Tab("Tất cả", "all")}
+              {cats.map((c) => Tab(c.name, c.slug))}
+            </div>
+          </div>
+
+          {/* Spacer + counts on larger screens */}
+          <div className="hidden sm:flex items-center ml-auto text-sm text-gray-500">
+            <span>{total ?? 0} món</span>
+            <span className="mx-2">•</span>
+            <span>
+              Trang {page} / {totalPages}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ===== Layout 2 cột: TOC trái + nội dung phải ===== */}
-      <div className="grid grid-cols-1 md:grid-cols-[18%_82%] gap-6">
-        {/* Sidebar TOC (sticky) */}
-        <SideToc
-          items={[
-            { id: "section-all", label: "Tất cả món" },
-            { id: "section-veg", label: "Món chay nổi bật" },
-          ]}
-          offset={112}
-        />
+      {/* ===== Layout: responsive sidebar + content ===== */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+        {/* Sidebar TOC (sticky on lg+) */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-28">
+            <SideToc
+              items={[
+                { id: "section-all", label: "Tất cả món" },
+                { id: "section-veg", label: "Món chay nổi bật" },
+              ]}
+              offset={112}
+            />
+          </div>
+        </aside>
 
         {/* Content */}
         <div className="min-w-0">
@@ -109,7 +128,7 @@ export default async function HomePage({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <nav className="mt-8 flex items-center justify-center gap-2">
+              <nav className="mt-8 flex flex-wrap items-center justify-center gap-2">
                 <Link
                   href={{
                     pathname: "/home",
@@ -125,27 +144,38 @@ export default async function HomePage({
                   Trước
                 </Link>
 
-                {Array.from({ length: totalPages })
-                  .slice(Math.max(0, page - 3), Math.min(totalPages, page + 2))
-                  .map((_, i) => {
-                    const p = Math.max(1, page - 2) + i;
-                    return (
-                      <Link
-                        key={p}
-                        href={{
-                          pathname: "/home",
-                          query: makeQuery({ page: p }),
-                        }}
-                        className={`px-3 py-1.5 rounded border text-sm ${
-                          p === page
-                            ? "bg-black text-white border-black"
-                            : "hover:bg-gray-50"
-                        }`}
-                      >
-                        {p}
-                      </Link>
-                    );
-                  })}
+                {/* On small screens show a compact current page indicator */}
+                <div className="sm:hidden text-sm px-2 py-1">
+                  {page} / {totalPages}
+                </div>
+
+                {/* Full page list on sm+ */}
+                <div className="hidden sm:flex items-center gap-1">
+                  {Array.from({ length: totalPages })
+                    .slice(
+                      Math.max(0, page - 3),
+                      Math.min(totalPages, page + 2)
+                    )
+                    .map((_, i) => {
+                      const p = Math.max(1, page - 2) + i;
+                      return (
+                        <Link
+                          key={p}
+                          href={{
+                            pathname: "/home",
+                            query: makeQuery({ page: p }),
+                          }}
+                          className={`px-3 py-1.5 rounded border text-sm ${
+                            p === page
+                              ? "bg-black text-white border-black"
+                              : "hover:bg-gray-50"
+                          }`}
+                        >
+                          {p}
+                        </Link>
+                      );
+                    })}
+                </div>
 
                 <Link
                   href={{
@@ -189,6 +219,7 @@ export default async function HomePage({
                 Xem tất cả
               </Link>
             </div>
+
             <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-4 sm:p-5">
               <VegDishesSection
                 page={Number(vegPage) || 1}

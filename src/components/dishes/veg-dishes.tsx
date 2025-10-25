@@ -22,7 +22,7 @@ type DishItem = {
   time_minutes?: number | null;
   servings?: number | null;
   diet?: string | null;
-  cover_image_url?: string | null; // <-- thêm
+  cover_image_url?: string | null;
   [k: string]: unknown;
 };
 
@@ -66,7 +66,7 @@ export default async function VegDishesSection({
     servings: typeof d.servings === "number" ? d.servings : null,
     cover_image_url: String(
       (d as { cover_image_url?: string | null }).cover_image_url ?? ""
-    ), // <-- thêm
+    ),
     // giữ lại các trường khác nếu cần cho DishGrid
     ...(d as Record<string, unknown>),
   }));
@@ -81,41 +81,60 @@ export default async function VegDishesSection({
   return (
     <section aria-labelledby="veg-title" className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 id="veg-title" className="text-base font-semibold">
+        <h2 id="veg-title" className="text-base sm:text-lg font-semibold">
           Món chay gợi ý
         </h2>
-        <span className="text-sm text-gray-500">{total} món</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500 hidden sm:inline">
+            {total} món
+          </span>
+          <Link
+            href={{ pathname: "/home", query: { cat: "veg", page: 1 } }}
+            className="text-sm text-purple-600 hover:text-purple-700"
+          >
+            Xem tất cả
+          </Link>
+        </div>
       </div>
 
-      <DishGrid dishes={dishes} />
+      <div className="rounded-lg border bg-white p-3 sm:p-4">
+        <DishGrid
+          dishes={dishes}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+          itemClassName="h-full"
+          hrefBuilder={(d) => `/home/${d.slug}`}
+        />
 
-      {/* Pagination */}
-      <div className="flex items-center justify-center gap-2 pt-2">
-        <Link
-          href={buildHref(Math.max(1, clampedPage - 1))}
-          aria-disabled={clampedPage === 1}
-          className={`px-3 py-1.5 rounded-lg border text-sm ${
-            clampedPage === 1
-              ? "pointer-events-none opacity-50"
-              : "hover:bg-gray-50"
-          }`}
-        >
-          « Trước
-        </Link>
-        <span className="text-sm text-gray-600">
-          Trang {clampedPage} / {pageCount}
-        </span>
-        <Link
-          href={buildHref(Math.min(pageCount, clampedPage + 1))}
-          aria-disabled={clampedPage === pageCount}
-          className={`px-3 py-1.5 rounded-lg border text-sm ${
-            clampedPage === pageCount
-              ? "pointer-events-none opacity-50"
-              : "hover:bg-gray-50"
-          }`}
-        >
-          Sau »
-        </Link>
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <Link
+            href={buildHref(Math.max(1, clampedPage - 1))}
+            aria-disabled={clampedPage === 1}
+            className={`px-3 py-1.5 rounded-lg border text-sm ${
+              clampedPage === 1
+                ? "pointer-events-none opacity-50"
+                : "hover:bg-gray-50"
+            }`}
+          >
+            « Trước
+          </Link>
+
+          <div className="px-3 py-1 text-sm text-gray-700">
+            Trang {clampedPage} / {pageCount}
+          </div>
+
+          <Link
+            href={buildHref(Math.min(pageCount, clampedPage + 1))}
+            aria-disabled={clampedPage === pageCount}
+            className={`px-3 py-1.5 rounded-lg border text-sm ${
+              clampedPage === pageCount
+                ? "pointer-events-none opacity-50"
+                : "hover:bg-gray-50"
+            }`}
+          >
+            Sau »
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -1,3 +1,4 @@
+//components/chat/Chatbot.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -92,7 +93,7 @@ export default function Chatbot() {
       prompt: "Hướng dẫn thanh toán PayOS và áp dụng voucher 10%.",
     },
   ];
-  const useIntent = (p: string, sendNow = true) => {
+  const handleIntent = (p: string, sendNow = true) => {
     if (sendNow) {
       setInput(p);
       setTimeout(() => onSend(p), 0);
@@ -329,7 +330,7 @@ export default function Chatbot() {
                   {INTENTS.map((it) => (
                     <button
                       key={it.label}
-                      onClick={() => useIntent(it.prompt, true)}
+                      onClick={() => handleIntent(it.prompt, true)}
                       className="text-xs px-3 py-1.5 rounded-full border bg-white hover:bg-gray-50"
                     >
                       {it.label}

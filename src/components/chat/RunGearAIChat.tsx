@@ -56,7 +56,7 @@ export default function RunGearAIChat() {
     { label: "Kiểm tra tồn kho", prompt: "Mã RG-TRAIL-01 còn size 42 ở kho không?" },
     { label: "Voucher/PayOS", prompt: "Hướng dẫn thanh toán PayOS và áp dụng voucher 10%." },
   ];
-  const useIntent = (p: string) => {
+  const handleIntent = (p: string) => {
     setInput(p);
     setTimeout(() => onSend(p), 0);
   };
@@ -156,7 +156,7 @@ export default function RunGearAIChat() {
       <div className="px-4 sm:px-5 pt-3 bg-white/60">
         <div className="flex flex-wrap gap-2">
           {INTENTS.map((it) => (
-            <button key={it.label} onClick={() => useIntent(it.prompt)} className="text-xs px-3 py-1.5 rounded-full border bg-white hover:bg-gray-50">
+            <button key={it.label} onClick={() => handleIntent(it.prompt)} className="text-xs px-3 py-1.5 rounded-full border bg-white hover:bg-gray-50">
               {it.label}
             </button>
           ))}

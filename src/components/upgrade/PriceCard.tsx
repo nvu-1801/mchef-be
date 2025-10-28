@@ -1,24 +1,34 @@
 // components/upgrade/PriceCard.tsx
 "use client";
-
-import Link from "next/link";
-import type { ReactNode } from "react";
+import { useState } from "react";
+import { startCheckout } from "@/lib/startCheckout";
 
 export default function PriceCard({
-  title,
-  price,
-  period,
-  highlight,
-  cta,
-  children,
+  title, price, period, highlight, cta, planId, userId, children,
 }: {
   title: string;
   price: string;
   period: string;
   highlight?: boolean;
-  cta: { label: string; href: string };
-  children: ReactNode;
+  cta: { label: string };          // KHÔNG dùng href nữa
+  planId: string;                  // THÊM prop
+  userId: string;                  // THÊM prop (truyền xuống từ trên)
+  children: React.ReactNode;
 }) {
+  const [loading, setLoading] = useState(false);
+
+  async function onClick() {
+    try {
+      setLoading(true);
+      await startCheckout(planId, userId);
+    } catch (e) {
+      console.error(e);
+      alert((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className={`rounded-2xl border backdrop-blur bg-white/80 p-6 shadow-sm relative ${highlight ? "ring-2 ring-violet-400" : ""}`}>
       {highlight && (
@@ -32,12 +42,13 @@ export default function PriceCard({
         <span className="text-gray-500"> {period}</span>
       </div>
       {children}
-      <Link
-        href={cta.href}
-        className="mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-sky-500 via-violet-500 to-pink-500 hover:brightness-110 transition"
+      <button
+        onClick={onClick}
+        disabled={loading}
+        className="mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-sky-500 via-violet-500 to-pink-500 hover:brightness-110 transition disabled:opacity-60"
       >
-        {cta.label}
-      </Link>
+        {loading ? "Đang tạo phiên thanh toán..." : cta.label}
+      </button>
     </div>
   );
 }

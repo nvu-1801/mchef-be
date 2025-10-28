@@ -6,7 +6,7 @@ import PillTab from "./PillTab";
 import UserTables from "./UserTables";
 import ChefTables from "./ChefTables";
 
-export default function UpgradeClient({ isChef }: { isChef: boolean }) {
+export default function UpgradeClient({ isChef, userId }: { isChef: boolean; userId: string }) {
   const [audience, setAudience] = useState<"user" | "chef">(isChef ? "chef" : "user");
   const [period, setPeriod] = useState<"month" | "year">("month");
 
@@ -44,13 +44,14 @@ export default function UpgradeClient({ isChef }: { isChef: boolean }) {
       </div>
 
       <div className="rounded-3xl border bg-white/70 backdrop-blur p-6 md:p-8 shadow-sm">
-        {audience === "user" ? (
-          period === "month" ? <UserTables /> : <UserTables yearly />
-        ) : period === "month" ? (
-          <ChefTables />
-        ) : (
-          <ChefTables yearly />
-        )}
+        {audience === "user"
+  ? (period === "month"
+      ? <UserTables userId={userId} />
+      : <UserTables yearly userId={userId} />)
+  : (period === "month"
+      ? <ChefTables userId={userId} />
+      : <ChefTables yearly userId={userId} />)}
+
       </div>
 
       <div className="mt-10 grid md:grid-cols-3 gap-6">

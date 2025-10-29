@@ -8,6 +8,7 @@ import VegDishesSection from "@/components/dishes/veg-dishes";
 import DishGrid from "@/components/dishes/dish-grid";
 import SideToc from "@/components/common/side-toc";
 import Carousel from "@/components/common/Carousel";
+import SearchBar from "@/components/common/SearchBar";
 
 export const revalidate = 60;
 
@@ -81,6 +82,11 @@ export default async function HomePage({
           <Carousel />
         </div>
 
+        {/* Search + Header */}
+        <div className="mb-6">
+          <SearchBar />
+        </div>
+
         {/* Header with gradient */}
         <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-violet-50 via-fuchsia-50 to-pink-50 border border-violet-100 p-8 shadow-sm">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-violet-200 to-fuchsia-200 opacity-30 blur-3xl" />
@@ -102,8 +108,8 @@ export default async function HomePage({
         </div>
 
         {/* Category Tabs - Sticky */}
-        <div className="sticky top-28 z-40 -mx-4 sm:-mx-6 lg:-mx-8 mb-8">
-          <div className="bg-white/95 backdrop-blur-xl border-y border-gray-200 shadow-sm">
+        <div className="sticky top-28 z-40 px-8 sm:-mx-6 lg:-mx-8 mb-8 rounded-3xl ">
+          <div className="bg-white/95 backdrop-blur-xl border-y border-gray-200 shadow-sm rounded-3xl">
             <div className="px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center gap-4">
                 {/* Scrollable tabs */}

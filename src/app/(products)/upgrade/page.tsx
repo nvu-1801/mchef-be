@@ -31,7 +31,7 @@ export default async function UpgradePage() {
 
   return (
     <div className="min-h-dvh bg-white bg-[radial-gradient(45rem_45rem_at_80%_-10%,#dbeafe_10%,transparent_60%),radial-gradient(40rem_40rem_at_0%_120%,#fce7f3_10%,transparent_60%)]">
-      <UpgradeClient isChef={!!isChef} />
+      <UpgradeClient isChef={!!isChef} userId={user?.id ?? ""}  />
     </div>
   );
 }

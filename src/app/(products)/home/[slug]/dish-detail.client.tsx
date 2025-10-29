@@ -1,443 +1,538 @@
 "use client";
 
+import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import React, { useMemo, useRef, useState } from "react";
-import type { DishFull } from "@/modules/dishes/dish-public";
+import { useRouter } from "next/navigation";
+import { DishFull } from "@/modules/dishes/dish-public";
+
+type Props = {
+  dish: DishFull;
+  coverUrl: string;
+  ratingAvg: number;
+  ratingCount: number;
+};
 
 export default function DishDetailClient({
   dish,
   coverUrl,
   ratingAvg,
   ratingCount,
-}: {
-  dish: DishFull;
-  coverUrl?: string | null;
-  ratingAvg?: number;
-  ratingCount?: number;
-}) {
-  // compute sensible defaults
-  const computedCover =
-    coverUrl ||
-    dish.cover_image_url ||
-    dish.dish_images?.[0]?.image_url ||
-    "/placeholder.png";
-
-  const ratings = dish.ratings ?? [];
-  const avg =
-    typeof ratingAvg === "number"
-      ? ratingAvg
-      : ratings.length
-      ? ratings.reduce((s, r) => s + (r.stars || 0), 0) / ratings.length
-      : 0;
-  const count = typeof ratingCount === "number" ? ratingCount : ratings.length;
-
-  const dietTag = dish.diet ? dietLabel(dish.diet) : null;
-
-  const otherImages = useMemo(
-    () =>
-      (dish.dish_images || [])
-        .map((img) => img.image_url)
-        .filter(Boolean)
-        .filter((u) => u !== dish.cover_image_url && u !== computedCover),
-    [dish.dish_images, dish.cover_image_url, computedCover]
+}: Props) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
+    "ingredients"
   );
+  console.log(dish)
+  const dietIcons: Record<string, string> = {
+    veg: "🥗",
+    nonveg: "🍖",
+    vegan: "🌱",
+  };
 
-  const galleryRef = useRef<HTMLDivElement | null>(null);
-  const [activeImage, setActiveImage] = useState<string | null>(computedCover);
+  const dietLabels: Record<string, string> = {
+    veg: "Vegetarian",
+    nonveg: "Non-Veg",
+    vegan: "Vegan",
+  };
 
-  function scrollGallery(delta: number) {
-    if (!galleryRef.current) return;
-    galleryRef.current.scrollBy({ left: delta, behavior: "smooth" });
-  }
+  const difficultyColors: Record<string, string> = {
+    easy: "bg-green-100 text-green-800 border-green-200",
+    medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    hard: "bg-red-100 text-red-800 border-red-200",
+  };
+
+  const difficultyLabels: Record<string, string> = {
+    easy: "Dễ",
+    medium: "Trung bình",
+    hard: "Khó",
+  };
+
+  // thêm ngay sau phần destructuring props
+const videoUrl = dish.video_url || "https://media.istockphoto.com/id/675787815/vi/video/ng%E1%BB%8Dn-l%E1%BB%ADa-ch%C3%A1y-d%C6%B0%E1%BB%9Bi-ch%E1%BA%A3o-chi%C3%AAn-ch%E1%BB%A9a-%C4%91%E1%BA%A7y-t%C3%B4m.mp4?s=mp4-640x640-is&k=20&c=YSLyQP9FjhyZF3ABSEX-3zCksmcFvttdG22YSjiOd0w=";
+
 
   return (
-    <section className="max-w-6xl mx-auto px-4 py-6">
-      {/* breadcrumb */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-gray-600 mb-4">
-        <div className="flex items-center gap-2 truncate">
-          <Link href="/home" className="text-sky-600 hover:underline">
-            Trang chủ
-          </Link>
-          <span className="text-gray-300">/</span>
-          {dish.category?.slug && (
-            <>
-              <Link
-                href={{ pathname: "/home", query: { cat: dish.category.slug } }}
-                className="hover:underline"
+    <div className="min-h-screen mt-2 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Header */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="group flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 border hover:shadow-md transition"
+            >
+              <svg
+                className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                {dish.category.name}
-              </Link>
-              <span className="text-gray-300">/</span>
-            </>
-          )}
-          <span className="font-medium text-gray-800 truncate">
-            {dish.title}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <button onClick={() => history.back()} className="hover:underline">
-            ← Trước
-          </button>
-          <button onClick={() => history.forward()} className="hover:underline">
-            Tiếp →
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-        {/* left: media + content */}
-        <div className="space-y-6">
-          {/* media */}
-          <div className="rounded-xl overflow-hidden bg-white border">
-            <div className="w-full aspect-[4/3] bg-gray-100">
-              {/* main image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={activeImage ?? computedCover}
-                alt={dish.title}
-                className="w-full h-full object-cover"
-                loading="eager"
-              />
-            </div>
-
-            {/* gallery controls */}
-            <div className="flex items-center justify-between gap-3 p-3">
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2">
-                  <span className="px-2 py-1 text-xs rounded bg-gray-50 text-gray-700">
-                    ⏱ {dish.time_minutes ? `${dish.time_minutes} phút` : "—"}
-                  </span>
-                  <span className="px-2 py-1 text-xs rounded bg-gray-50 text-gray-700">
-                    🍽 {dish.servings ? `${dish.servings} phần` : "—"}
-                  </span>
-                  {dietTag && (
-                    <span className="px-2 py-1 text-xs rounded bg-emerald-50 text-emerald-700">
-                      {dietTag}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 text-sm text-gray-700">
-                  <StarBar value={avg} />
-                  <span className="ml-2 text-xs text-gray-600">
-                    {avg.toFixed(1)} ({count})
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* thumbnail strip - responsive: horizontal scroll on small, grid on md+ */}
-            <div className="px-3 pb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium text-gray-700">
-                  Hình ảnh
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => scrollGallery(-240)}
-                    aria-label="Prev"
-                    className="p-1 rounded-md hover:bg-gray-100"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    onClick={() => scrollGallery(240)}
-                    aria-label="Next"
-                    className="p-1 rounded-md hover:bg-gray-100"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
-
-              <div
-                ref={galleryRef}
-                className="flex gap-2 overflow-x-auto no-scrollbar py-1"
-                role="list"
-              >
-                {[computedCover, ...otherImages].map((u, i) => (
-                  <button
-                    key={u + i}
-                    onClick={() => setActiveImage(u)}
-                    className={`flex-shrink-0 rounded-lg overflow-hidden border ${
-                      activeImage === u ? "ring-2 ring-sky-400" : ""
-                    }`}
-                    style={{ width: 96, height: 72 }}
-                    aria-label={`Image ${i + 1}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={u}
-                      alt={`${dish.title} ${i + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* tips / description */}
-          {dish.tips && (
-            <div className="rounded-xl border bg-white p-4">
-              <div className="text-xs font-semibold text-gray-500">Gợi ý</div>
-              <p className="mt-2 text-sm text-gray-800 whitespace-pre-line">
-                {dish.tips}
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-gray-900 truncate">
+                {dish.title}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {dish.category?.name ?? "Uncategorized"}
               </p>
             </div>
-          )}
-
-          {/* ingredients + steps stacked on mobile */}
-          <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-            <section className="rounded-xl border bg-white p-4">
-              <h3 className="text-sm font-semibold mb-2">Nguyên liệu</h3>
-              {dish.dish_ingredients?.length ? (
-                <ul className="space-y-2 text-sm text-gray-800">
-                  {dish.dish_ingredients.map((it, idx) => (
-                    <li key={idx} className="flex justify-between gap-3">
-                      <div>{it.ingredient?.name}</div>
-                      <div className="text-gray-600 text-sm">
-                        {[it.amount, it.ingredient?.unit]
-                          .filter(Boolean)
-                          .join(" ")}{" "}
-                        {it.note ? (
-                          <span className="text-gray-400">· {it.note}</span>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-sm text-gray-500">
-                  Chưa có nguyên liệu.
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-xl border bg-white p-4">
-              <h3 className="text-sm font-semibold mb-3">Các bước</h3>
-              {dish.recipe_steps?.length ? (
-                <ol className="space-y-4">
-                  {dish.recipe_steps.map((s) => (
-                    <li key={s.step_no} className="flex gap-3">
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-semibold">
-                        {s.step_no}
-                      </div>
-                      <div className="flex-1 text-sm text-gray-800">
-                        <div className="whitespace-pre-line">{s.content}</div>
-                        {s.image_url && (
-                          <div className="mt-2 rounded-lg overflow-hidden border">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={s.image_url}
-                              alt={`step ${s.step_no}`}
-                              className="w-full h-auto object-cover"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <div className="text-sm text-gray-500">Chưa có hướng dẫn.</div>
-              )}
-            </section>
+            <div className="flex items-center gap-2">
+              <button className="flex items-center justify-center h-10 w-10 rounded-xl border bg-white hover:bg-gray-50 transition">
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+              <button className="flex items-center justify-center h-10 w-10 rounded-xl border bg-white hover:bg-gray-50 transition">
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+                </svg>
+              </button>
+            </div>
           </div>
+        </div>
+      </header>
 
-          {/* ratings list */}
-          <div className="rounded-xl border bg-white p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Đánh giá ({count})</h3>
-              <div className="text-sm text-gray-600">{avg.toFixed(1)} / 5</div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid lg:grid-cols-[1fr_400px] gap-8">
+          {/* Main Content */}
+          <div className="space-y-6">
+            {/* Cover Image */}
+            <div className="relative overflow-hidden rounded-3xl border bg-white shadow-xl mx-auto max-w-xl">
+              <div className="aspect-square relative">
+                <Image
+                  src={coverUrl}
+                  alt={dish.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 640px) 100vw, 576px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                {/* Overlay badges */}
+                <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+                  {dish.diet && (
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-white/95 backdrop-blur-sm border border-white/50 px-3 py-1.5 text-xs font-semibold shadow-lg">
+                      <span className="text-base">{dietIcons[dish.diet]}</span>
+                      {dietLabels[dish.diet]}
+                    </span>
+                  )}
+                  {dish.time_minutes && dish.time_minutes > 0 && (
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-white/95 backdrop-blur-sm border border-white/50 px-3 py-1.5 text-xs font-semibold shadow-lg">
+                      <span className="text-base">⏱️</span>
+                      {dish.time_minutes} phút
+                    </span>
+                  )}
+                  {dish.servings && dish.servings > 0 && (
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-white/95 backdrop-blur-sm border border-white/50 px-3 py-1.5 text-xs font-semibold shadow-lg">
+                      <span className="text-base">👥</span>
+                      {dish.servings} người
+                    </span>
+                  )}
+                  {/* {dish.difficulty && (
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-lg backdrop-blur-sm border px-3 py-1.5 text-xs font-semibold shadow-lg ${
+                        difficultyColors[dish.difficulty] ||
+                        "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      <span className="text-base">📊</span>
+                      {difficultyLabels[dish.difficulty] || dish.difficulty}
+                    </span>
+                  )}
+                  {dish.calories && dish.calories > 0 && (
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-white/95 backdrop-blur-sm border border-white/50 px-3 py-1.5 text-xs font-semibold shadow-lg">
+                      <span className="text-base">🔥</span>
+                      {dish.calories} kcal
+                    </span>
+                  )} */}
+                </div>
+              </div>
             </div>
 
-            {ratings.length ? (
-              <ul className="mt-3 space-y-3">
-                {ratings.map((r, idx) => (
-                  <li key={idx} className="border rounded p-3 bg-white">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600">
-                          {r.user_id?.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium">
-                            {r.user_id ?? "User"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {formatDate(r.created_at)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        <StarRow stars={r.stars} />
-                      </div>
+            {/* Description */}
+            {/* {dish.description && (
+              <div className="relative overflow-hidden rounded-2xl border bg-white p-6 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
+                    📖
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      Mô tả món ăn
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {dish.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )} */}
+
+            {/* Video Section */}
+            {videoUrl && (
+              <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50 p-6 shadow-sm mx-auto max-w-2xl">
+                <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-rose-200 to-pink-200 opacity-30 blur-3xl" />
+
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-600 to-pink-600 flex items-center justify-center text-white text-xl shadow-lg shadow-rose-500/30">
+                      🎬
                     </div>
-                    {r.comment && (
-                      <p className="mt-2 text-sm text-gray-800">{r.comment}</p>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      Video hướng dẫn
+                    </h3>
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl">
+                    <div className="aspect-video">
+                      <video
+                        controls
+                        className="w-full h-full"
+                        poster={coverUrl}
+                        preload="metadata"
+                      >
+                        <source src={videoUrl} type="video/mp4" />
+                        <source src={videoUrl} type="video/webm" />
+                        Trình duyệt của bạn không hỗ trợ video.
+                      </video>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                    <span>Xem video để học cách nấu chi tiết hơn</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Author Card */}
+            {dish.creator && (
+              <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-violet-200 shadow-lg flex-shrink-0">
+                    <Image
+                      src={dish.creator.avatar_url ?? "/default-avatar.png"}
+                      alt={dish.creator.display_name ?? "Chef"}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-500 mb-1">Đầu bếp</div>
+                    <div className="font-bold text-gray-900">
+                      {dish.creator.display_name ?? "Anonymous"}
+                    </div>
+                  </div>
+                  <button className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-violet-500/30 hover:shadow-xl transition">
+                    Follow
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Tabs */}
+            <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
+              <div className="border-b bg-gray-50/50 px-6 py-4">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveTab("ingredients")}
+                    className={`relative px-6 py-2.5 rounded-xl text-sm font-semibold transition ${
+                      activeTab === "ingredients"
+                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    🥕 Nguyên liệu ({dish.dish_ingredients?.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("steps")}
+                    className={`relative px-6 py-2.5 rounded-xl text-sm font-semibold transition ${
+                      activeTab === "steps"
+                        ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30"
+                        : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    📝 Cách làm ({dish.recipe_steps?.length || 0} bước)
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {activeTab === "ingredients" && (
+                  <div className="space-y-3">
+                    {dish.dish_ingredients &&
+                    dish.dish_ingredients.length > 0 ? (
+                      <>
+                        <div className="mb-4 p-4 rounded-xl bg-violet-50 border border-violet-100">
+                          <p className="text-sm text-violet-900 font-medium">
+                            📋 Tổng cộng:{" "}
+                            <span className="font-bold">
+                              {dish.dish_ingredients.length}
+                            </span>{" "}
+                            nguyên liệu
+                          </p>
+                        </div>
+                        {dish.dish_ingredients.map((ing, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 rounded-xl border bg-gray-50/50 p-4 hover:bg-gray-50 hover:border-violet-200 transition group"
+                          >
+                            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-100 to-fuchsia-100 group-hover:from-violet-200 group-hover:to-fuchsia-200 flex items-center justify-center text-xl flex-shrink-0 transition">
+                              🥘
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900">
+                                {idx + 1}.{" "}
+                                {ing.ingredient?.name ?? "Nguyên liệu"}
+                              </div>
+                              {(ing.amount || ing.ingredient?.unit) && (
+                                <div className="text-sm text-violet-600 font-medium mt-1">
+                                  {[ing.amount, ing.ingredient?.unit]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                </div>
+                              )}
+                              {ing.note && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {ing.note}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-6xl mb-4">🥘</div>
+                        <p className="text-gray-400 font-medium">
+                          Chưa có nguyên liệu
+                        </p>
+                      </div>
                     )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="mt-3 text-sm text-gray-500">
-                Chưa có đánh giá.
+                  </div>
+                )}
+
+                {activeTab === "steps" && (
+                  <div className="space-y-6">
+                    {dish.recipe_steps && dish.recipe_steps.length > 0 ? (
+                      <>
+                        <div className="mb-4 p-4 rounded-xl bg-violet-50 border border-violet-100">
+                          <p className="text-sm text-violet-900 font-medium">
+                            👨‍🍳 Tổng cộng:{" "}
+                            <span className="font-bold">
+                              {dish.recipe_steps.length}
+                            </span>{" "}
+                            bước thực hiện
+                          </p>
+                        </div>
+                        {dish.recipe_steps.map((step, index) => (
+                          <div key={step.step_no} className="relative">
+                            <div className="flex gap-4">
+                              <div className="flex-shrink-0">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white font-bold shadow-lg shadow-violet-500/30">
+                                  {step.step_no}
+                                </div>
+                              </div>
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <h4 className="font-bold text-gray-900 mb-2">
+                                      Bước {step.step_no}
+                                    </h4>
+                                    <p className="text-gray-700 leading-relaxed">
+                                      {step.content}
+                                    </p>
+                                  </div>
+                                </div>
+                                {step.image_url && (
+                                  <div className="relative aspect-square rounded-xl overflow-hidden border shadow-sm max-w-xs hover:shadow-lg transition">
+                                    <Image
+                                      src={step.image_url}
+                                      alt={`Bước ${step.step_no}`}
+                                      fill
+                                      className="object-cover"
+                                      sizes="(max-width: 640px) 100vw, 320px"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {index !== dish.recipe_steps!.length - 1 && (
+                              <div className="absolute left-5 top-12 bottom-0 w-0.5 bg-gradient-to-b from-violet-200 to-transparent" />
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-6xl mb-4">📝</div>
+                        <p className="text-gray-400 font-medium">
+                          Chưa có hướng dẫn
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tips */}
+            {dish.tips && (
+              <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-sm">
+                <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 opacity-30 blur-3xl" />
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-xl shadow-lg shadow-amber-500/30">
+                      💡
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Mẹo hay</h3>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {dish.tips}
+                  </p>
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* right: sticky info */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-4">
-            <div className="rounded-xl border bg-white p-4">
-              <h2 className="text-lg font-bold text-gray-900">{dish.title}</h2>
-              <div className="mt-2 text-sm text-gray-600">
-                {dish.category?.name}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg bg-gray-50 p-2 text-center">
-                  <div className="text-xs text-gray-500">Thời gian</div>
-                  <div className="font-medium">
-                    {dish.time_minutes ? `${dish.time_minutes} phút` : "—"}
+          {/* Sidebar */}
+          <aside className="space-y-6">
+            <div className="sticky top-24 space-y-6">
+              {/* Rating Card */}
+              <div className="relative overflow-hidden rounded-2xl border bg-white p-6 shadow-sm">
+                <div className="text-center">
+                  <div className="text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-2">
+                    {ratingAvg > 0 ? ratingAvg.toFixed(1) : "—"}
                   </div>
-                </div>
-                <div className="rounded-lg bg-gray-50 p-2 text-center">
-                  <div className="text-xs text-gray-500">Khẩu phần</div>
-                  <div className="font-medium">
-                    {dish.servings ? `${dish.servings} phần` : "—"}
+                  <div className="flex items-center justify-center gap-1 mb-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-6 h-6 ${
+                          i < Math.round(ratingAvg)
+                            ? "text-amber-400"
+                            : "text-gray-300"
+                        }`}
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
                   </div>
+                  <div className="text-sm text-gray-500 mb-4">
+                    {ratingCount} đánh giá
+                  </div>
+                  <button className="w-full rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/30 hover:shadow-xl transition">
+                    ⭐ Đánh giá món này
+                  </button>
                 </div>
               </div>
 
-              <div className="mt-3">
-                <div className="text-xs text-gray-500">Người đăng</div>
-                <div className="mt-1 text-sm text-gray-800">
-                  {dish.creator?.display_name ?? "Đầu bếp"}
+              {/* Share Card */}
+              <div className="rounded-2xl border bg-white p-6 shadow-sm">
+                <h3 className="text-sm font-bold text-gray-900 mb-4">
+                  Chia sẻ món ăn
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      icon: "📘",
+                      label: "Facebook",
+                      color: "from-blue-500 to-blue-600",
+                    },
+                    {
+                      icon: "📷",
+                      label: "Instagram",
+                      color: "from-pink-500 to-rose-500",
+                    },
+                    {
+                      icon: "🐦",
+                      label: "Twitter",
+                      color: "from-sky-500 to-blue-500",
+                    },
+                    {
+                      icon: "📋",
+                      label: "Copy",
+                      color: "from-gray-500 to-gray-600",
+                    },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      className="flex flex-col items-center gap-2 rounded-xl border p-4 hover:bg-gray-50 transition group"
+                    >
+                      <div
+                        className={`h-10 w-10 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center text-xl text-white shadow-lg group-hover:scale-110 transition`}
+                      >
+                        {item.icon}
+                      </div>
+                      <span className="text-xs font-medium text-gray-600">
+                        {item.label}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="mt-4">
-                <button className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-violet-500 text-white font-medium hover:brightness-105">
-                  Lưu / Yêu thích
-                </button>
+              {/* Related */}
+              <div className="rounded-2xl border bg-white p-6 shadow-sm">
+                <h3 className="text-sm font-bold text-gray-900 mb-4">
+                  Món tương tự
+                </h3>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Link
+                      key={i}
+                      href="#"
+                      className="flex gap-3 rounded-xl border p-3 hover:bg-gray-50 transition group"
+                    >
+                      <div className="h-16 w-16 rounded-lg bg-gray-200 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 truncate group-hover:text-violet-600 transition">
+                          Món ăn #{i}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ⭐ 4.5 • 30 phút
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
-
-            <div className="rounded-xl border bg-white p-3 text-sm text-gray-600">
-              <div>Đăng: {formatDate(dish.created_at || "")}</div>
-              {dish.updated_at && (
-                <div className="mt-1">
-                  Cập nhật: {formatDate(dish.updated_at)}
-                </div>
-              )}
-              <div className="mt-2">
-                ID:{" "}
-                <span className="text-xs text-gray-400 break-all">
-                  {dish.id}
-                </span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
-/* ---------- helpers & small components ---------- */
-
-function Star({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      className={`w-4 h-4 ${className}`}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M12 17.27l6.18 3.73-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z" />
-    </svg>
-  );
-}
-
-function StarHalf({ className = "" }: { className?: string }) {
-  return (
-    <svg className={`w-4 h-4 ${className}`} viewBox="0 0 24 24" aria-hidden>
-      <defs>
-        <linearGradient id="halfg">
-          <stop offset="50%" stopColor="currentColor" />
-          <stop offset="50%" stopColor="transparent" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M12 17.27l6.18 3.73-1.64-7.03L22 9.24l-7.19-.62L12 2 9.19 8.62 2 9.24l5.46 4.73L5.82 21z"
-        fill="url(#halfg)"
-        stroke="currentColor"
-      />
-    </svg>
-  );
-}
-
-function StarBar({ value }: { value: number }) {
-  const pct = Math.max(0, Math.min(100, (value / 5) * 100));
-  return (
-    <div className="relative inline-block" aria-hidden>
-      <div className="flex gap-1 text-gray-300">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} />
-        ))}
-      </div>
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ width: `${pct}%` }}
-      >
-        <div className="flex gap-1 text-amber-400">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} />
-          ))}
+          </aside>
         </div>
       </div>
     </div>
   );
-}
-
-function StarRow({ stars }: { stars: number }) {
-  const full = Math.floor(stars);
-  const half = stars - full >= 0.5;
-  return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: 5 }).map((_, i) => {
-        if (i < full) return <Star key={i} className="text-amber-400" />;
-        if (i === full && half)
-          return <StarHalf key={i} className="text-amber-400" />;
-        return <Star key={i} className="text-gray-300" />;
-      })}
-    </div>
-  );
-}
-
-function dietLabel(key: string) {
-  if (!key) return "";
-  if (key === "veg") return "Vegetarian";
-  if (key === "vegan") return "Vegan";
-  if (key === "nonveg") return "Non-Veg";
-  return key;
-}
-
-function formatDate(iso?: string) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  } catch {
-    return iso.slice(0, 10);
-  }
 }

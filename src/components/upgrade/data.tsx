@@ -1,42 +1,26 @@
-// components/upgrade/data.ts
-export type PlanId =
-  | "user_free"
-  | "user_premium_month"
-  | "user_premium_year"
-  | "chef_basic"
-  | "chef_pro_month"
-  | "chef_pro_year";
+// components/upgrade/data.tsx
+import type { UserPlan, ChefPlan, PlanId } from "./types/plan";
 
 export const CHECK_SVG = (
-  <svg
-    className="h-5 w-5"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M20 6L9 17l-5-5" />
   </svg>
 );
 
 export const CROSS_SVG = (
-  <svg
-    className="h-5 w-5 opacity-40"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
+  <svg className="h-5 w-5 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
-export const userMonthly = [
+// =================== USER ===================
+
+export const userMonthly: UserPlan[] = [
   {
     title: "Miễn phí",
     price: "0đ",
     period: "/tháng",
-    planId: "user_free" as PlanId,
+    planId: "user_free",
     cta: { label: "Dùng miễn phí", href: "/auth/signin" },
     features: {
       basicRecipes: true,
@@ -53,11 +37,8 @@ export const userMonthly = [
     title: "Premium",
     price: "79.000đ",
     period: "/tháng",
-    planId: "user_premium_month" as PlanId,
-    cta: {
-      label: "Nâng cấp tháng",
-      href: "/api/checkout?plan=user_premium_month",
-    },
+    planId: "user_premium_month",
+    cta: { label: "Nâng cấp tháng", href: "/api/checkout?plan=user_premium_month" },
     highlight: true,
     features: {
       basicRecipes: true,
@@ -72,12 +53,12 @@ export const userMonthly = [
   },
 ];
 
-export const userYearly = [
+export const userYearly: UserPlan[] = [
   {
     title: "Miễn phí",
     price: "0đ",
     period: "/năm",
-    planId: "user_free" as PlanId,
+    planId: "user_free",
     cta: { label: "Dùng miễn phí", href: "/auth/signin" },
     features: {
       basicRecipes: true,
@@ -94,11 +75,8 @@ export const userYearly = [
     title: "Premium (tiết kiệm 20%)",
     price: "759.000đ",
     period: "/năm",
-    planId: "user_premium_year" as PlanId,
-    cta: {
-      label: "Nâng cấp năm",
-      href: "/api/checkout?plan=user_premium_year",
-    },
+    planId: "user_premium_year",
+    cta: { label: "Nâng cấp năm", href: "/api/checkout?plan=user_premium_year" },
     highlight: true,
     features: {
       basicRecipes: true,
@@ -113,16 +91,15 @@ export const userYearly = [
   },
 ];
 
-export const chefMonthly = [
+// =================== CHEF ===================
+
+export const chefMonthly: ChefPlan[] = [
   {
     title: "Chef Basic",
     price: "149.000đ",
     period: "/tháng",
-    planId: "chef_basic" as PlanId,
-    cta: {
-      label: "Nâng cấp tháng",
-      href: "/api/checkout?plan=chef_pro_month&tier=basic",
-    },
+    planId: "chef_basic_month",
+    cta: { label: "Nâng cấp tháng", href: "/api/checkout?plan=chef_basic_month" },
     features: {
       postRecipes: true,
       featuredSlots: 1,
@@ -138,7 +115,7 @@ export const chefMonthly = [
     title: "Chef Pro",
     price: "299.000đ",
     period: "/tháng",
-    planId: "chef_pro_month" as PlanId,
+    planId: "chef_pro_month",
     cta: { label: "Nâng cấp tháng", href: "/api/checkout?plan=chef_pro_month" },
     highlight: true,
     features: {
@@ -154,16 +131,13 @@ export const chefMonthly = [
   },
 ];
 
-export const chefYearly = [
+export const chefYearly: ChefPlan[] = [
   {
     title: "Chef Basic (tiết kiệm 20%)",
     price: "1.429.000đ",
     period: "/năm",
-    planId: "chef_pro_year" as PlanId,
-    cta: {
-      label: "Nâng cấp năm",
-      href: "/api/checkout?plan=chef_pro_year&tier=basic",
-    },
+    planId: "chef_basic_year",
+    cta: { label: "Nâng cấp năm", href: "/api/checkout?plan=chef_basic_year" },
     features: {
       postRecipes: true,
       featuredSlots: 1,
@@ -179,7 +153,7 @@ export const chefYearly = [
     title: "Chef Pro (tiết kiệm 25%)",
     price: "2.699.000đ",
     period: "/năm",
-    planId: "chef_pro_year" as PlanId,
+    planId: "chef_pro_year",
     cta: { label: "Nâng cấp năm", href: "/api/checkout?plan=chef_pro_year" },
     highlight: true,
     features: {

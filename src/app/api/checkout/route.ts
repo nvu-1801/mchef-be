@@ -198,10 +198,10 @@ export async function POST(req: NextRequest) {
       qrCode,
       paymentLinkId,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[checkout] unhandled:", e);
     return NextResponse.json(
-      { error: e?.message || "Failed to create checkout" },
+      { error: (e as Error)?.message || "Failed to create checkout" },
       { status: 500 }
     );
   }

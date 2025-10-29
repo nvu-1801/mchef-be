@@ -141,6 +141,7 @@ export async function getDishFullBySlug(slug: string) {
     .select(
       `
       id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+      video_url,
       created_by, published, created_at, updated_at,
 
       category:category_id ( id, slug, name, icon ),

@@ -1,4 +1,3 @@
-// components/upgrade/PriceCard.tsx
 "use client";
 import { useState } from "react";
 import { startCheckout } from "@/lib/startCheckout";
@@ -10,20 +9,23 @@ export default function PriceCard({
   price: string;
   period: string;
   highlight?: boolean;
-  cta: { label: string };          // KHÔNG dùng href nữa
-  planId: string;                  // THÊM prop
-  userId: string;                  // THÊM prop (truyền xuống từ trên)
+  cta: { label: string };
+  planId: string;
+  userId: string;
   children: React.ReactNode;
 }) {
   const [loading, setLoading] = useState(false);
 
   async function onClick() {
     try {
+      if (!planId || !userId) {
+        throw new Error("Thiếu planId hoặc userId");
+      }
       setLoading(true);
       await startCheckout(planId, userId);
     } catch (e) {
       console.error(e);
-      alert((e as Error).message);
+      alert((e as Error).message || "Checkout failed");
     } finally {
       setLoading(false);
     }

@@ -12,18 +12,42 @@ export type Dish = {
   updated_at?: string | null;
   published?: boolean;
   created_by?: string;
+  video_url?: string | null;
 };
 
 export type DishFull = Dish & {
-  category?: { id: string; slug: string; name: string; icon: string | null } | null;
-  dish_images?: { id: string; image_url: string; alt: string | null; sort: number | null }[];
-  recipe_steps?: { step_no: number; content: string; image_url: string | null }[];
+  category?: {
+    id: string;
+    slug: string;
+    name: string;
+    icon: string | null;
+  } | null;
+  dish_images?: {
+    id: string;
+    image_url: string;
+    alt: string | null;
+    sort: number | null;
+  }[];
+  recipe_steps?: {
+    step_no: number;
+    content: string;
+    image_url: string | null;
+  }[];
   dish_ingredients?: {
     amount: string | null;
     note: string | null;
     ingredient: { id: string; name: string; unit: string | null };
   }[];
-  ratings?: { user_id: string; stars: number; comment: string | null; created_at: string }[];
+  ratings?: {
+    user_id: string;
+    stars: number;
+    comment: string | null;
+    created_at: string;
+  }[];
   favorites?: { user_id: string }[];
-  creator?: { id: string; display_name: string | null; avatar_url: string | null } | null;
+  creator?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };

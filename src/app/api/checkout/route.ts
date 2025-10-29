@@ -14,6 +14,14 @@ function genOrderCode() {
   return Number(base + rnd);
 }
 
+// helper: cắt mô tả ≤ max ký tự, bỏ kí tự lạ/emoji để chắc chắn
+function safeDescription(input: string, max = 25) {
+  const s = input.normalize("NFKC").replace(/\s+/g, " ").trim();
+  // (tuỳ chọn) bỏ emoji/kí tự ngoài BMP nếu sợ cắt sai
+  const noEmoji = s.replace(/[\u{1F300}-\u{1FAFF}\u{1F000}-\u{1F9FF}]/gu, "");
+  return noEmoji.length <= max ? noEmoji : noEmoji.slice(0, max);
+}
+
 // Ký HMAC SHA256 theo format chuẩn: nối các cặp key=value theo thứ tự alphabet
 function signPayload(obj: Record<string, unknown>, checksumKey: string) {
   // Lấy đúng 5 key: amount, cancelUrl, description, orderCode, returnUrl
@@ -32,12 +40,18 @@ export async function POST(req: NextRequest) {
     const { planId, userId, returnUrl, cancelUrl } = await req.json();
 
     if (!planId || !userId) {
-      return NextResponse.json({ error: "Missing planId or userId" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing planId or userId" },
+        { status: 400 }
+      );
     }
 
     // 1) Xác thực user theo session cookie
     const sb = await supabaseServer();
-    const { data: { user }, error: authErr } = await sb.auth.getUser();
+    const {
+      data: { user },
+      error: authErr,
+    } = await sb.auth.getUser();
     if (authErr || !user || user.id !== userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -48,7 +62,11 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.PAYOS_API_KEY;
     const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
 
-    if (!baseUrl) return NextResponse.json({ error: "NEXT_PUBLIC_BASE_URL missing" }, { status: 500 });
+    if (!baseUrl)
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_BASE_URL missing" },
+        { status: 500 }
+      );
     if (!clientId || !apiKey || !checksumKey) {
       return NextResponse.json({ error: "PAYOS env missing" }, { status: 500 });
     }
@@ -65,36 +83,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plan query failed" }, { status: 500 });
     }
     if (!plan || !plan.active) {
-      return NextResponse.json({ error: "Plan not found/inactive" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Plan not found/inactive" },
+        { status: 400 }
+      );
     }
     if (!Number.isFinite(plan.amount) || plan.amount <= 0) {
-      return NextResponse.json({ error: "Invalid plan amount" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid plan amount" },
+        { status: 400 }
+      );
     }
 
     // 4) orderCode + payload
     const orderCode = genOrderCode();
-    const desc = `Thanh toan plan ${planId} - order ${orderCode}`;
+
+    // ⚠️ description phải ≤ 25 kí tự
+    // Ví dụ ngắn gọn: "Plan <id> #<order>"
+    const rawDesc = `Plan ${planId} #${orderCode}`;
+    const desc = safeDescription(rawDesc, 25);
+
+    // Đảm bảo amount là integer > 0
+    const amount = Math.max(0, Math.round(Number(plan.amount)));
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return NextResponse.json(
+        { error: "Invalid plan amount" },
+        { status: 400 }
+      );
+    }
+
     const payload = {
-      amount: plan.amount,
+      amount, // dùng amount đã chuẩn hoá
       orderCode,
-      description: desc,
+      description: desc, // dùng mô tả đã rút gọn
       returnUrl: returnUrl ?? `${baseUrl}/checkout/return`,
       cancelUrl: cancelUrl ?? `${baseUrl}/checkout/cancel`,
       // optional: expiredAt: Math.floor(Date.now()/1000) + 30*60,
-      // optional: buyerEmail, items...
     };
     const signature = signPayload(payload, checksumKey);
 
     // 5) Gọi REST PayOS
-    const resp = await fetch("https://api-merchant.payos.vn/v2/payment-requests", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-client-id": clientId,
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify({ ...payload, signature }),
-    });
+    const resp = await fetch(
+      "https://api-merchant.payos.vn/v2/payment-requests",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-client-id": clientId,
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({ ...payload, signature }),
+      }
+    );
 
     const j = await resp.json();
 
@@ -105,9 +145,18 @@ export async function POST(req: NextRequest) {
     }
 
     const data = j?.data ?? {};
-    const checkoutUrl = data?.checkoutUrl ?? null;
+    const checkoutUrl =
+      typeof data?.checkoutUrl === "string" ? data.checkoutUrl : null;
     const paymentLinkId = data?.paymentLinkId ?? data?.id ?? null;
     const qrCode = data?.qrCode ?? null;
+
+    if (!checkoutUrl) {
+      console.error("[PayOS] missing checkoutUrl. Raw response:", j);
+      return NextResponse.json(
+        { error: "Missing checkoutUrl from PayOS", detail: j },
+        { status: 502 }
+      );
+    }
 
     // 6) Lưu order (cần RLS: INSERT owner)
     const { data: inserted, error: insErr } = await sb
@@ -130,7 +179,16 @@ export async function POST(req: NextRequest) {
 
     if (insErr) {
       console.error("[DB] insert order error:", insErr);
-      return NextResponse.json({ error: "DB insert failed (RLS?)" }, { status: 500 });
+      return NextResponse.json(
+        { error: "DB insert failed (RLS?)" },
+        { status: 500 }
+      );
+    }
+
+    const accept = req.headers.get("accept") || "";
+    const wantsHtml = accept.includes("text/html");
+    if (wantsHtml) {
+      return NextResponse.redirect(checkoutUrl, { status: 303 });
     }
 
     return NextResponse.json({
@@ -142,6 +200,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error("[checkout] unhandled:", e);
-    return NextResponse.json({ error: e?.message || "Failed to create checkout" }, { status: 500 });
+    return NextResponse.json(
+      { error: e?.message || "Failed to create checkout" },
+      { status: 500 }
+    );
   }
 }

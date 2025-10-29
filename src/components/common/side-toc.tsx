@@ -59,7 +59,7 @@ export default function SideToc({
             className={[
               "block rounded-lg px-3 py-2 text-sm transition",
               isActive
-                ? "bg-purple-50 text-purple-700 border border-purple-200"
+                ? "bg-purple-50 me-4 text-purple-700 border border-purple-200"
                 : "text-gray-700 hover:bg-gray-50 border border-transparent",
             ].join(" ")}
             aria-current={isActive ? "true" : undefined}

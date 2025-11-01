@@ -10,18 +10,25 @@ export default async function ProductsGroupLayout({
 }) {
   const sb = await supabaseServer();
 
-  const { data: { session } } = await sb.auth.getSession();
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
   const user = session?.user ?? null;
 
   // đọc role từ profiles
   let isAdmin = false;
+  let isChef = false;
   if (user) {
     const { data: prof } = await sb
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-    isAdmin = prof?.role === "admin";
+
+    const role = prof?.role ?? null;
+
+    isAdmin = role === "admin";
+    isChef = role === "chef" || role === "admin";
   }
 
   return (
@@ -31,7 +38,7 @@ export default async function ProductsGroupLayout({
     >
       <GlobalLoading />
 
-      <HeaderBar isAdmin={isAdmin} user={user} />
+      <HeaderBar isAdmin={isAdmin} isChef={isChef} user={user} />
 
       {/* Main */}
       <main className="flex-1">

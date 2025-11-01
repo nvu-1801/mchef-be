@@ -23,7 +23,7 @@ export default function DishDetailClient({
   const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
     "ingredients"
   );
-  console.log(dish)
+  console.log(dish);
   const dietIcons: Record<string, string> = {
     veg: "🥗",
     nonveg: "🍖",
@@ -49,8 +49,22 @@ export default function DishDetailClient({
   };
 
   // thêm ngay sau phần destructuring props
-const videoUrl = dish.video_url || "https://media.istockphoto.com/id/675787815/vi/video/ng%E1%BB%8Dn-l%E1%BB%ADa-ch%C3%A1y-d%C6%B0%E1%BB%9Bi-ch%E1%BA%A3o-chi%C3%AAn-ch%E1%BB%A9a-%C4%91%E1%BA%A7y-t%C3%B4m.mp4?s=mp4-640x640-is&k=20&c=YSLyQP9FjhyZF3ABSEX-3zCksmcFvttdG22YSjiOd0w=";
+  const videoUrl =
+    dish.video_url ||
+    "https://media.istockphoto.com/id/675787815/vi/video/ng%E1%BB%8Dn-l%E1%BB%ADa-ch%C3%A1y-d%C6%B0%E1%BB%9Di-ch%E1%BA%A3o-chi%C3%AAn-ch%E1%BB%A9a-%C4%91%E1%BA%A7y-t%C3%B4m.mp4?s=mp4-640x640-is&k=20&c=YSLyQP9FjhyZF3ABSEX-3zCksmcFvttdG22YSjiOd0w=";
 
+  // helper để build proxy url cho remote images; nếu là local (bắt đầu bằng "/") giữ nguyên
+  const proxied = (u?: string | null, fallback = "/default-avatar.png") => {
+    if (!u) return fallback;
+    if (u.startsWith("/")) return u;
+    return `/api/img?u=${encodeURIComponent(u)}`;
+  };
+
+  const coverProxy = proxied(coverUrl, coverUrl);
+  const avatarProxy = proxied(
+    dish.creator?.avatar_url ?? null,
+    "/default-avatar.png"
+  );
 
   return (
     <div className="min-h-screen mt-2 bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -118,7 +132,7 @@ const videoUrl = dish.video_url || "https://media.istockphoto.com/id/675787815/v
             <div className="relative overflow-hidden rounded-3xl border bg-white shadow-xl mx-auto max-w-xl">
               <div className="aspect-square relative">
                 <Image
-                  src={coverUrl}
+                  src={coverProxy}
                   alt={dish.title}
                   fill
                   className="object-cover"
@@ -240,7 +254,7 @@ const videoUrl = dish.video_url || "https://media.istockphoto.com/id/675787815/v
                 <div className="flex items-center gap-4">
                   <div className="relative h-14 w-14 rounded-full overflow-hidden border-2 border-violet-200 shadow-lg flex-shrink-0">
                     <Image
-                      src={dish.creator.avatar_url ?? "/default-avatar.png"}
+                      src={avatarProxy}
                       alt={dish.creator.display_name ?? "Chef"}
                       fill
                       className="object-cover"
@@ -377,7 +391,9 @@ const videoUrl = dish.video_url || "https://media.istockphoto.com/id/675787815/v
                                 {step.image_url && (
                                   <div className="relative aspect-square rounded-xl overflow-hidden border shadow-sm max-w-xs hover:shadow-lg transition">
                                     <Image
-                                      src={step.image_url}
+                                      src={`/api/img?u=${encodeURIComponent(
+                                        step.image_url
+                                      )}`}
                                       alt={`Bước ${step.step_no}`}
                                       fill
                                       className="object-cover"

@@ -208,6 +208,9 @@ export default function DishForm({
               </button>
             </div>
 
+            {/* Gửi cho server biết đang chọn gì */}
+            <input type="hidden" name="image_source" value={imageSource} />
+
             {/* URL Input */}
             {imageSource === "url" && (
               <div>
@@ -217,7 +220,7 @@ export default function DishForm({
                   placeholder="https://example.com/image.jpg"
                   onChange={(e) => handleUrlChange(e.target.value)}
                   className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 placeholder:text-gray-400 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
                 />
               </div>
             )}
@@ -225,8 +228,10 @@ export default function DishForm({
             {/* File Upload */}
             {imageSource === "upload" && (
               <div>
+                {/* CHỈ SỬA: có name="cover_file" để form gửi file */}
                 <input
                   type="file"
+                  name="cover_file"
                   accept="image/*"
                   onChange={handleFileChange}
                   className="hidden"
@@ -235,7 +240,7 @@ export default function DishForm({
                 <label
                   htmlFor="cover-upload"
                   className="block w-full rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 text-center cursor-pointer
-                             hover:border-indigo-400 hover:bg-indigo-50/50 transition group"
+                         hover:border-indigo-400 hover:bg-indigo-50/50 transition group"
                 >
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-2xl group-hover:scale-110 transition">
@@ -245,17 +250,11 @@ export default function DishForm({
                       {uploadedFile ? uploadedFile.name : "Chọn ảnh từ máy"}
                     </div>
                     <div className="text-xs text-gray-500">
-                      PNG, JPG, GIF up to 10MB
+                      PNG, JPG, GIF ≤ 10MB
                     </div>
                   </div>
                 </label>
-                {uploadedFile && (
-                  <input
-                    type="hidden"
-                    name="cover_image_file"
-                    value={uploadedFile.name}
-                  />
-                )}
+                {/* BỎ hidden input cover_image_file cũ đi */}
               </div>
             )}
 

@@ -4,6 +4,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+// Thêm một hàm để hiển thị icon Reset/Refresh
+const ResetIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 2v6h-6" />
+    <path d="M3 12a9 9 0 0 1 15-6.6" />
+    <path d="M3 22v-6h6" />
+    <path d="M21 12a9 9 0 0 1-15 6.6" />
+  </svg>
+);
+
+
 export default function SearchBar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -84,14 +103,13 @@ export default function SearchBar() {
           )}
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2 text-xs font-bold text-white shadow-md hover:brightness-110"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-2 text-xs font-bold text-white shadow-md hover:brightness-110" 
             title="Tìm kiếm"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="7" />
               <path d="M21 21l-3.5-3.5" />
             </svg>
-            Tìm
           </button>
         </div>
       </div>
@@ -101,9 +119,9 @@ export default function SearchBar() {
         type="button"
         onClick={onResetAll}
         className="hidden sm:inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-        title="Đặt lại bộ lọc"
+        title="Đặt lại bộ lọc (Reset)"
       >
-        Đặt lại
+        <ResetIcon className="h-5 w-5" />
       </button>
     </form>
   );

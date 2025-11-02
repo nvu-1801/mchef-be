@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import DishForm from "@/components/dishes/DishForm";
+import DishForm from "@/components/home/DishForm";
 
 type Category = { id: string; name: string };
 

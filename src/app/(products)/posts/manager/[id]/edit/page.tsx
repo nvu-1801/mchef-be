@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
-import DishForm from "@/components/dishes/DishForm";
+import DishForm from "@/components/home/DishForm";
 import { updateDish } from "../../actions";
 
 type Category = { id: string; name: string };

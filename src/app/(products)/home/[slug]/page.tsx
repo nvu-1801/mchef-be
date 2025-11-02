@@ -4,14 +4,20 @@ import {
   getDishFullBySlug,
 } from "@/modules/dishes/service/dish.service";
 import DishDetailClient from "./dish-detail.client";
+import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export default async function DishDetailPage({ params }: Props) {
   const { slug } = await params;
+  const sb = await supabaseServer();
+
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
 
   try {
-    const dish = await getDishFullBySlug(slug); // lấy đủ các field join
+    const dish = await getDishFullBySlug(slug);
     const coverUrl =
       dishImageUrl(dish) ?? dish.cover_image_url ?? "/placeholder.png";
 
@@ -25,12 +31,20 @@ export default async function DishDetailPage({ params }: Props) {
         )
       : 0;
 
+    // 👉 Thêm currentUser object
+    const currentUser = user
+      ? {
+          id: user.id,
+        }
+      : null;
+
     return (
       <DishDetailClient
         dish={dish}
         coverUrl={coverUrl}
         ratingAvg={ratingAvg}
         ratingCount={ratingCount}
+        currentUser={currentUser} 
       />
     );
   } catch (e: unknown) {

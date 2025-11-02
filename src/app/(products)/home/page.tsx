@@ -4,8 +4,8 @@ import {
   listDishes,
   listCategories,
 } from "@/modules/dishes/service/dish.service";
-import VegDishesSection from "@/components/dishes/veg-dishes";
-import DishGrid from "@/components/dishes/dish-grid";
+import VegDishesSection from "@/components/home/veg-dishes";
+import DishGrid from "@/components/home/dish-grid";
 import SideToc from "@/components/common/side-toc";
 import Carousel from "@/components/common/Carousel";
 import SearchBar from "@/components/common/SearchBar";

@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-// Kiểu trả về ra client
 type CommentDTO = {
   id: string;
   content: string;
@@ -10,7 +9,7 @@ type CommentDTO = {
   user_id: string;
   user: {
     id: string;
-    full_name: string | null;
+    display_name: string | null;
     avatar_url: string | null;
   } | null;
 };
@@ -21,21 +20,15 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const dishId = searchParams.get("dishId");
   const limit = Number(searchParams.get("limit") ?? PAGE_SIZE_DEFAULT);
-  const cursor = searchParams.get("cursor"); // ISO date string hoặc null
-  const cursorId = searchParams.get("cursorId"); // tie-breaker id
+  const cursor = searchParams.get("cursor");
+  const cursorId = searchParams.get("cursorId");
 
   if (!dishId) {
-    return NextResponse.json(
-      { error: "Missing dishId" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing dishId" }, { status: 400 });
   }
 
   const sb = await supabaseServer();
 
-  // Phân trang dạng cursor (created_at desc, rồi id desc)
-  // Nếu có cursor: lấy các bản ghi "trước" cursor (thời gian nhỏ hơn),
-  // hoặc thời gian bằng nhưng id < cursorId (ràng buộc phụ)
   let query = sb
     .from("comments")
     .select(
@@ -46,7 +39,7 @@ export async function GET(req: Request) {
       user_id,
       user:profiles!comments_user_id_fkey (
         id,
-        full_name,
+        display_name,
         avatar_url
       )
     `
@@ -54,28 +47,20 @@ export async function GET(req: Request) {
     .eq("dish_id", dishId)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(limit + 1); // +1 để biết có next
+    .limit(limit + 1);
 
-  if (cursor) {
-    // Supabase chưa hỗ trợ "seek" phức tạp, nên ta filter bằng RPC hoặc 2 bước.
-    // Ở đây làm cách đơn giản: filter created_at <= cursor rồi lọc tiếp trên server.
-    query = query.lte("created_at", cursor);
-  }
+  if (cursor) query = query.lte("created_at", cursor);
 
   const { data, error } = await query;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Lọc tie-breaker id phía server nếu có cursor + cursorId
   let items = (data ?? []) as any[];
 
   if (cursor && cursorId) {
     items = items.filter((row) => {
       if (row.created_at < cursor) return true;
       if (row.created_at > cursor) return false;
-      // created_at == cursor => lấy những id < cursorId theo thứ tự desc
       return row.id < cursorId;
     });
   }
@@ -84,13 +69,9 @@ export async function GET(req: Request) {
   const pageItems = items.slice(0, limit);
 
   const nextCursor =
-    hasMore && pageItems.length > 0
-      ? pageItems[pageItems.length - 1].created_at
-      : null;
+    hasMore && pageItems.length > 0 ? pageItems[pageItems.length - 1].created_at : null;
   const nextCursorId =
-    hasMore && pageItems.length > 0
-      ? pageItems[pageItems.length - 1].id
-      : null;
+    hasMore && pageItems.length > 0 ? pageItems[pageItems.length - 1].id : null;
 
   const result: CommentDTO[] = pageItems.map((c) => ({
     id: c.id,
@@ -99,10 +80,10 @@ export async function GET(req: Request) {
     user_id: c.user_id,
     user: c.user
       ? {
-        id: c.user.id,
-        full_name: c.user.full_name,
-        avatar_url: c.user.avatar_url,
-      }
+          id: c.user.id,
+          display_name: c.user.display_name,
+          avatar_url: c.user.avatar_url,
+        }
       : null,
   }));
 
@@ -120,24 +101,21 @@ export async function POST(req: Request) {
     data: { session },
   } = await sb.auth.getSession();
 
-  if (!session?.user) {
+  if (!session?.user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const body = await req.json().catch(() => null);
   const dishId = body?.dishId as string | undefined;
   const contentRaw = (body?.content ?? "") as string;
 
-  if (!dishId) {
+  if (!dishId)
     return NextResponse.json({ error: "Missing dishId" }, { status: 400 });
-  }
+
   const content = contentRaw.trim();
-  if (content.length === 0) {
+  if (content.length === 0)
     return NextResponse.json({ error: "Content cannot be empty" }, { status: 400 });
-  }
-  if (content.length > 5000) {
+  if (content.length > 5000)
     return NextResponse.json({ error: "Content too long" }, { status: 400 });
-  }
 
   const { data, error } = await sb
     .from("comments")
@@ -151,7 +129,7 @@ export async function POST(req: Request) {
       id, content, created_at, user_id,
       user:profiles!comments_user_id_fkey (
         id,
-        full_name,
+        display_name,
         avatar_url
       )
     `
@@ -159,8 +137,10 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    // Gợi ý khi dính unique (trùng dish_id, user_id, content)
-    if (error.message?.toLowerCase().includes("duplicate") || error.code === "23505") {
+    if (
+      error.message?.toLowerCase().includes("duplicate") ||
+      error.code === "23505"
+    ) {
       return NextResponse.json(
         { error: "Bạn đã gửi bình luận trùng nội dung cho món này." },
         { status: 409 }
@@ -180,7 +160,7 @@ export async function POST(req: Request) {
       user: userRow
         ? {
             id: userRow.id,
-            full_name: userRow.full_name,
+            display_name: userRow.display_name,
             avatar_url: userRow.avatar_url,
           }
         : null,

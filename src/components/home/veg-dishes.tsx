@@ -1,6 +1,6 @@
 // components/dishes/veg-dishes.tsx
 import Link from "next/link";
-import DishGrid, { type DishCard } from "@/components/dishes/dish-grid";
+import DishGrid, { type DishCard } from "@/components/home/dish-grid";
 import { listDishes } from "@/modules/dishes/service/dish.service";
 
 export const revalidate = 60;

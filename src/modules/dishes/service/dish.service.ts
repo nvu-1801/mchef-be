@@ -89,7 +89,9 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
  * - cat: "all" hoặc slug của category
  * - Chỉ lấy published: true
  * - Tạm order theo title (nếu muốn theo thời gian, thêm created_at trong schema & select)
- */ export async function listDishes({
+ /* eslint-disable @typescript-eslint/consistent-type-definitions */
+
+export async function listDishes({
   q = "",
   cat = "all",
   page = 1,
@@ -106,17 +108,22 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
 
   let qy = sb
     .from("dishes")
-    // lấy cả count để tính tổng trang
+    // Lưu ý: giữ nguyên 2 SELECT string của bạn
     .select(usingFilter ? DISH_SELECT_WITH_FILTER : DISH_SELECT_DEFAULT, {
       count: "exact",
     })
+    // ✅ chỉ show public + đã duyệt
     .eq("published", true)
+    .eq("review_status", "approved")
     .order("title", { ascending: true });
 
   if (q) qy = qy.ilike("title", `%${q}%`);
-  if (usingFilter) qy = qy.eq("categories.slug", cat); // giữ nguyên cách filter theo slug của bạn
 
-  // phân trang với range (to là chỉ số *inclusive*)
+  // giữ nguyên cách filter theo slug category mà bạn đang dùng
+  // (nếu trong SELECT quan hệ đặt alias "category:category_id (...)", có thể dùng "category.slug")
+  if (usingFilter) qy = qy.eq("categories.slug", cat);
+
+  // phân trang (to là inclusive)
   qy = qy.range(from, to);
 
   const { data, count, error } = await qy;
@@ -132,6 +139,7 @@ const DISH_SELECT_DEFAULT = `${DISH_FIELDS},categories:category_id(slug,name)`;
     pageSize: _size,
   };
 }
+
 
 /** Lấy 1 món FULL theo slug (published) */
 export async function getDishFullBySlug(slug: string) {

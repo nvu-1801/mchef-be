@@ -91,8 +91,8 @@ export async function createDish(formData: FormData) {
   const { error } = await sb.from("dishes").insert(payload);
   if (error) throw error;
 
-  revalidatePath("/dishes/manager");
-  redirect("/dishes/manager");
+  revalidatePath("/posts/manager");
+  redirect("/posts/manager");
 }
 
 export async function updateDish(id: string, formData: FormData) {
@@ -153,6 +153,6 @@ export async function deleteDish(id: string) {
   const { error } = await sb.from("dishes").delete().eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/dishes/manager");
-  redirect("/dishes/manager");
+  revalidatePath("/posts/manager");
+  redirect("/posts/manager");
 }

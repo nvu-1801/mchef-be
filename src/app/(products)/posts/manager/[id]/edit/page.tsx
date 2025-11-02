@@ -43,7 +43,7 @@ export default async function EditDishPage({
     .single();
 
   if (error || !dishData || dishData.created_by !== user.id) {
-    redirect("/dishes/manager");
+    redirect("/posts/manager");
   }
 
   const dish: DishFormValues & { id: string } = {

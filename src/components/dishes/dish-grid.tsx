@@ -7,9 +7,10 @@ export type DishCard = {
   slug: string;
   title: string;
   category_name?: string;
+  diet?: string | null;
   time_minutes?: number | null;
   servings?: number | null;
-  // các field ảnh mà dishImageUrl cần (ví dụ path/bucket/..)
+  review_status?: string | null;
 } & Parameters<typeof dishImageUrl>[0];
 
 function hashStr(s: string) {
@@ -34,13 +35,16 @@ function RatingStars({ rating }: { rating: number }) {
         const isFull = i < full;
         const isHalf = i === full && half;
         return (
-          <span key={i} className="relative inline-block h-4 w-4">
+          <span
+            key={i}
+            className="relative inline-block h-3.5 w-3.5 text-amber-500"
+          >
             <svg
               viewBox="0 0 24 24"
               className="absolute inset-0"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.2"
               aria-hidden
             >
               <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
@@ -59,44 +63,60 @@ function RatingStars({ rating }: { rating: number }) {
           </span>
         );
       })}
-      <span className="ml-1 text-xs font-medium text-gray-700">
+      <span className="ml-0.5 text-[11px] font-medium text-gray-700">
         {rating.toFixed(1)}
       </span>
     </div>
   );
 }
 
+const dietLabelMap: Record<string, string> = {
+  veg: "Vegetarian",
+  nonveg: "Non-Veg",
+  vegan: "Vegan",
+};
+const dietEmojiMap: Record<string, string> = {
+  veg: "🥗",
+  nonveg: "🍖",
+  vegan: "🌱",
+};
+
 export default function DishGrid({
   dishes,
-  className = "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4",
+  className = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4",
   itemClassName = "",
   hrefBuilder,
 }: {
   dishes: DishCard[];
-  /** tuỳ biến grid ngoài (ví dụ ép 2 hàng với 6 cột ở xl) */
   className?: string;
-  /** thêm class cho mỗi item/card */
   itemClassName?: string;
-  /** custom link detail, mặc định dùng slug: /home/[slug] */
   hrefBuilder?: (d: DishCard) => string;
 }) {
+  const visible = (dishes ?? []).filter(
+    (d) => !d.review_status || d.review_status === "approved"
+  );
+
   return (
     <ul className={className} role="list">
-      {dishes.map((d) => {
+      {visible.map((d) => {
         const idKey = (d.id ?? d.slug ?? d.title) as string;
         const rating = fakeRatingFromId(idKey);
         const img = dishImageUrl(d) ?? "/placeholder.png";
         const href = hrefBuilder ? hrefBuilder(d) : `/home/${d.slug}`;
+        const dietKey = (d.diet || "").toLowerCase();
+        const dietText = dietLabelMap[dietKey] || d.diet || undefined;
+        const dietEmoji = dietEmojiMap[dietKey];
 
         return (
           <li key={idKey} className={`group ${itemClassName} flex`}>
             <Link
               href={href}
-              className="block w-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              className="block w-full rounded-xl border border-gray-200/70 bg-white shadow-sm hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               aria-label={d.title}
             >
-              <div className="flex flex-col h-full">
-                <div className="relative overflow-hidden rounded-2xl bg-gray-100 aspect-[4/3] sm:aspect-[3/2] md:aspect-square">
+              <div className="flex flex-col">
+                {/* Image */}
+                <div className="relative overflow-hidden rounded-t-xl bg-gray-100 aspect-[4/3] sm:aspect-[3/2] md:aspect-square">
                   <img
                     src={img}
                     alt={d.title}
@@ -104,33 +124,39 @@ export default function DishGrid({
                     loading="lazy"
                     decoding="async"
                   />
-
-                  {/* hover overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                  <div className="absolute left-3 top-3 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
-                      ⏱ {d.time_minutes ? `${d.time_minutes} phút` : "—"}
+                  {/* top-left chips */}
+                  <div className="absolute left-2 top-2 flex items-center gap-1.5">
+                    <span className="inline-flex items-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium shadow-sm">
+                      ⏱ {d.time_minutes ? `${d.time_minutes}’` : "—"}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
-                      🍽 {d.servings ? `${d.servings} phần` : "—"}
+                    <span className="inline-flex items-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium shadow-sm">
+                      🍽 {d.servings ?? "—"}
                     </span>
                   </div>
-
-                  <div className="absolute right-3 bottom-3">
-                    <div className="rounded-xl bg-white/95 px-2.5 py-1 shadow-md">
-                      <RatingStars rating={rating} />
-                    </div>
+                  {/* rating bottom-right */}
+                  <div className="absolute right-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 shadow-md">
+                    <RatingStars rating={rating} />
                   </div>
                 </div>
 
-                <div className="mt-3 px-0">
-                  <p className="font-semibold text-gray-900 text-sm line-clamp-2 group-hover:text-gray-700 transition-colors">
+                {/* Text block */}
+                <div className="p-2.5">
+                  <p className="font-semibold text-[13.5px] leading-snug text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors">
                     {d.title}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {d.category_name ?? ""}
-                  </p>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {d.category_name && (
+                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10.5px] text-gray-700">
+                        🍲 {d.category_name}
+                      </span>
+                    )}
+                    {dietText && (
+                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] text-emerald-700">
+                        {dietEmoji ?? "🍽️"} {dietText}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </Link>

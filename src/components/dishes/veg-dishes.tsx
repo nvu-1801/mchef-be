@@ -42,12 +42,15 @@ export default async function VegDishesSection({
   const itemsTyped = items as unknown as DishItem[];
 
   // Lọc món chay
+  // Lọc món chay
   const veg = itemsTyped.filter((d) => {
     const v = String(d?.diet ?? "").toLowerCase();
-    return v === "veg" || v === "vegetarian" || v === "vegan";
+    const status = String(d?.review_status ?? "").toLowerCase();
+    return (
+      (v === "veg" || v === "vegetarian" || v === "vegan") &&
+      status === "approved" // ✅ chỉ hiển thị món đã duyệt
+    );
   });
-
-  if (!veg.length) return null;
 
   // Phân trang phía server cho danh sách chay đã lọc
   const total = veg.length;

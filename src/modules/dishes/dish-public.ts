@@ -13,6 +13,7 @@ export type Dish = {
   published?: boolean;
   created_by?: string;
   video_url?: string | null;
+  review_status?: string | null;
 };
 
 export type DishFull = Dish & {

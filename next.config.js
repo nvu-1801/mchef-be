@@ -111,6 +111,11 @@ const nextConfig = {
     ],
     formats: ["image/avif", "image/webp"],
   },
+   experimental: {
+    serverActions: {
+      bodySizeLimit: "25mb", // hoặc "50mb" tuỳ video
+    },
+  },
 };
 
 module.exports = nextConfig;

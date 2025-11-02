@@ -9,6 +9,7 @@ type Item = {
   slug: string;
   cover_image_url: string | null;
   created_at: string;
+  video_url?: string | null;
   updated_at: string | null;
   published: boolean;
   review_status: "pending" | "approved" | "rejected";
@@ -26,6 +27,75 @@ type Item = {
     icon?: string | null;
   } | null; // 👈 thêm slug, icon
 };
+
+function VideoDialog({
+  url,
+  poster,
+  trigger = "badge", // "overlay" | "badge"
+  label = "Xem video",
+}: {
+  url: string;
+  poster?: string | null;
+  trigger?: "overlay" | "badge";
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const Trigger =
+    trigger === "overlay" ? (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-grid place-items-center rounded-full border border-white/40 bg-black/55 backdrop-blur px-5 py-5 text-white text-lg font-semibold hover:bg-black/70 active:scale-95 transition"
+        aria-label="Play video"
+      >
+        ▶
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 rounded-lg bg-black/60 text-white px-2 py-1 text-[11px] hover:bg-black/70"
+      >
+        🎬 {label}
+      </button>
+    );
+
+  return (
+    <>
+      {Trigger}
+      {open && (
+        <div className="fixed inset-0 z-[100]">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute inset-0 grid place-items-center p-4">
+            <div className="w-full max-w-5xl">
+              <div className="relative bg-black rounded-2xl overflow-hidden shadow-2xl">
+                <video
+                  src={url}
+                  controls
+                  autoPlay
+                  playsInline
+                  poster={poster ?? undefined}
+                  className="w-full h-auto max-h-[80vh] object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="absolute top-3 right-3 rounded-full bg-white/90 text-gray-800 px-3 py-1 text-sm font-semibold hover:bg-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 type ListRes = {
   items: Item[];
@@ -192,22 +262,46 @@ export default function ModerationDishesClient() {
               const dietEmoji = DIET_EMOJI[dietKey] || "🍽️";
               const catName = it.category?.name || "—";
               const catIcon = it.category?.icon || "🍲";
+              const hasVideo = !!it.video_url && it.video_url.trim().length > 0;
+              const poster = it.cover_image_url ?? placeholder;
 
               return (
                 <div
                   key={it.id}
                   className="rounded-xl border bg-white shadow-sm overflow-hidden"
                 >
-                  {/* Ảnh bìa */}
-                  <div className="relative aspect-[16/9] bg-gray-100">
-                    <img
-                      src={it.cover_image_url || placeholder}
-                      alt={it.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      loading="lazy"
-                    />
-                    {/* Status chip trên ảnh */}
-                    <div className="absolute left-2 top-2 flex gap-2">
+                  <div className="relative aspect-[16/9] bg-gray-100 overflow-hidden group rounded-t-xl">
+                    {hasVideo ? (
+                      <>
+                        <video
+                          src={it.video_url!.trim()}
+                          playsInline
+                          muted
+                          loop
+                          preload="metadata"
+                          poster={poster}
+                          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        />
+                        {/* Play ở giữa */}
+                        <div className="absolute inset-0 z-10 grid place-items-center">
+                          <VideoDialog
+                            url={it.video_url!.trim()}
+                            poster={poster}
+                            trigger="overlay"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <img
+                        src={poster}
+                        alt={it.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    )}
+
+                    {/* Status chips */}
+                    <div className="absolute left-2 top-2 z-20 flex gap-2">
                       <span className="text-[11px] font-medium rounded-full bg-white/90 border px-2 py-0.5">
                         {it.review_status}
                       </span>
@@ -221,6 +315,46 @@ export default function ModerationDishesClient() {
                         </span>
                       )}
                     </div>
+
+                    {/* Badge xem video */}
+                    {hasVideo && (
+                      <div className="absolute left-2 bottom-2 z-20">
+                        <VideoDialog
+                          url={it.video_url!.trim()}
+                          poster={poster}
+                          trigger="badge"
+                          label="Xem video"
+                        />
+                      </div>
+                    )}
+
+                    {/* Status chips (đặt trên video) */}
+                    <div className="absolute left-2 top-2 z-20 flex gap-2">
+                      <span className="text-[11px] font-medium rounded-full bg-white/90 border px-2 py-0.5">
+                        {it.review_status}
+                      </span>
+                      {it.published ? (
+                        <span className="text-[11px] font-medium rounded-full bg-emerald-600 text-white px-2 py-0.5">
+                          Public
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium rounded-full bg-gray-300 text-gray-800 px-2 py-0.5">
+                          Private
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Badge xem video */}
+                    {it.video_url && (
+                      <div className="absolute left-2 bottom-2 z-20">
+                        <VideoDialog
+                          url={it.video_url}
+                          poster={it.cover_image_url ?? placeholder}
+                          trigger="badge"
+                          label="Xem video"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-3">

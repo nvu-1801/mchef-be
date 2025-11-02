@@ -1,6 +1,7 @@
 // components/dishes/dish-grid.tsx
 import Link from "next/link";
 import { dishImageUrl } from "@/modules/dishes/service/dish.service";
+import VideoDialog from "@/app/(products)/posts/manager/VideoDialog";
 
 export type DishCard = {
   id?: string;
@@ -11,6 +12,8 @@ export type DishCard = {
   time_minutes?: number | null;
   servings?: number | null;
   review_status?: string | null;
+  video_url?: string | null;
+  cover_image_url?: string | null;
 } & Parameters<typeof dishImageUrl>[0];
 
 function hashStr(s: string) {
@@ -115,17 +118,53 @@ export default function DishGrid({
               aria-label={d.title}
             >
               <div className="flex flex-col">
-                {/* Image */}
-                <div className="relative overflow-hidden rounded-t-xl bg-gray-100 aspect-[4/3] sm:aspect-[3/2] md:aspect-square">
-                  <img
-                    src={img}
-                    alt={d.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                {/* Thumbnail */}
+                <div className="relative overflow-hidden rounded-t-xl bg-gray-100 aspect-[16/10] group">
+                  {/* --- Ưu tiên VIDEO nếu có --- */}
+                  {d.video_url ? (
+                    <>
+                      <video
+                        src={d.video_url}
+                        playsInline
+                        muted
+                        loop
+                        preload="metadata"
+                        poster={
+                          d.cover_image_url ??
+                          dishImageUrl(d) ??
+                          "/placeholder.png"
+                        }
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                      />
+
+                      {/* Nút xem video ở giữa */}
+                      <div className="absolute inset-0 z-10 grid place-items-center">
+                        <VideoDialog
+                          url={d.video_url}
+                          poster={
+                            d.cover_image_url ?? dishImageUrl(d) ?? undefined
+                          }
+                          trigger="overlay"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    // fallback: chỉ có ảnh
+                    <img
+                      src={
+                        d.cover_image_url ??
+                        dishImageUrl(d) ??
+                        "/placeholder.png"
+                      }
+                      alt={d.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+
                   {/* top-left chips */}
-                  <div className="absolute left-2 top-2 flex items-center gap-1.5">
+                  <div className="absolute left-2 top-2 z-20 flex items-center gap-1.5">
                     <span className="inline-flex items-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium shadow-sm">
                       ⏱ {d.time_minutes ? `${d.time_minutes}’` : "—"}
                     </span>
@@ -133,10 +172,24 @@ export default function DishGrid({
                       🍽 {d.servings ?? "—"}
                     </span>
                   </div>
+
                   {/* rating bottom-right */}
-                  <div className="absolute right-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 shadow-md">
+                  <div className="absolute right-2 bottom-2 z-20 rounded-lg bg-white/95 px-2 py-1 shadow-md">
                     <RatingStars rating={rating} />
                   </div>
+
+                  {/* badge xem video (nếu có) */}
+                  {d.video_url && (
+                    <div className="absolute left-2 bottom-2 z-20">
+                      <VideoDialog
+                        url={d.video_url}
+                        poster={
+                          d.cover_image_url ?? dishImageUrl(d) ?? undefined
+                        }
+                        trigger="badge"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Text block */}

@@ -24,6 +24,11 @@ const CreateDish = z.object({
   servings: z.number().int().min(1).max(1000).optional(),
   tips: z.string().max(5000).optional(),
   published: z.boolean().optional(),
+  video_url: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export async function GET(request: Request) {
@@ -45,6 +50,7 @@ export async function GET(request: Request) {
     .select(
       `
     id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+    video_url,
     created_by, published, created_at, updated_at,
     category:category_id ( id, slug, name, icon ),
     dish_images ( id, image_url, alt, sort ),
@@ -138,13 +144,14 @@ export async function POST(req: Request) {
       time_minutes: payload.time_minutes ?? null,
       servings: payload.servings ?? null,
       tips: payload.tips ?? null,
+      video_url: payload.video_url ?? null,
       published: payload.published ?? false,
       created_by: user.id, // server quyết định
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .select(
-      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at"
+      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at, video_url"
     )
     .single();
 

@@ -29,9 +29,8 @@ export default function DishDetailClient({
   ratingCount,
   currentUser,
 }: Props) {
-  const videoUrl =
-    dish.video_url ||
-    "https://media.istockphoto.com/id/675787815/vi/video/ng%E1%BB%8Dn-l%E1%BB%ADa-ch%C3%A1y-d%C6%B0%E1%BB%9Di-ch%E1%BA%A3o-chi%C3%AAn-ch%E1%BB%A9a-%C4%91%E1%BA%A7y-t%C3%B4m.mp4?s=mp4-640x640-is&k=20&c=YSLyQP9FjhyZF3ABSEX-3zCksmcFvttdG22YSjiOd0w=";
+  // ⚠️ bỏ fallback iStock
+  const videoUrl = (dish.video_url ?? "").trim() || null;
 
   const proxied = (u?: string | null, fallback = "/default-avatar.png") =>
     buildProxy(u, fallback);
@@ -41,18 +40,45 @@ export default function DishDetailClient({
     dish.creator?.avatar_url ?? null,
     "/default-avatar.png"
   );
+
+  const hasVideo = !!videoUrl;
+
   return (
-   <div className="min-h-screen mt-2 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen mt-2 bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <DishHeader title={dish.title} category={dish.category?.name} />
-      
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-[1fr_400px] gap-8">
           {/* Main Content Column */}
           <div className="space-y-8">
             {/* Hero Section */}
             <div className="space-y-6">
+              {/* ẢNH COVER luôn hiển thị */}
               <DishCover cover={coverProxy} dish={dish} />
-              {videoUrl && <DishVideo videoUrl={videoUrl} poster={coverProxy} />}
+
+              {/* VIDEO: có thì phát, không thì hiển thị placeholder đẹp */}
+              {hasVideo ? (
+                <DishVideo videoUrl={videoUrl!} poster={coverProxy} />
+              ) : (
+                <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-gray-50 to-gray-100 p-8 flex flex-col items-center justify-center shadow-sm">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-gray-200 to-gray-300 opacity-30 blur-3xl" />
+                  <div className="relative flex flex-col items-center gap-4 text-center">
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-3xl shadow-lg shadow-gray-400/40">
+                      🎬
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-1">
+                        Chưa có video minh hoạ
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Hãy thêm video để món ăn sinh động hơn 🍤
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tác giả */}
               {dish.creator && (
                 <AuthorCard avatar={avatarProxy} creator={dish.creator} />
               )}
@@ -61,7 +87,7 @@ export default function DishDetailClient({
             {/* Recipe Content */}
             <div className="space-y-8">
               <DishTabs dish={dish} proxied={proxied} />
-              
+
               {dish.tips && (
                 <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-sm">
                   <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 opacity-30 blur-3xl" />
@@ -70,7 +96,9 @@ export default function DishDetailClient({
                       <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-xl shadow-lg shadow-amber-500/30">
                         💡
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900">Mẹo hay</h3>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Mẹo hay
+                      </h3>
                     </div>
                     <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                       {dish.tips}
@@ -118,7 +146,7 @@ export default function DishDetailClient({
                     },
                     {
                       icon: "🐦",
-                      label: "Twitter", 
+                      label: "Twitter",
                       color: "from-sky-500 to-blue-500",
                     },
                     {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createDish as _createDish, deleteDish } from "./actions";
 import AddDishButton from "./AddDishButton";
+import VideoDialog from "../../../../components/common/VideoDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ type DishListItem = {
   created_at: string | null;
   review_status: string | null;
   review_note: string | null;
+  video_url: string | null;
 };
 // ---------- Helpers (server-safe) ----------
 function hashStr(s: string) {
@@ -96,7 +98,7 @@ export default async function DishesManagerPage() {
   const { data: dishData } = await sb
     .from("dishes")
     .select(
-      "id,title,cover_image_url,published,created_at,review_status,review_note"
+      "id,title,cover_image_url,published,created_at,review_status,review_note,video_url"
     )
     .eq("created_by", user.id)
     .order("created_at", { ascending: false });
@@ -263,9 +265,30 @@ export default async function DishesManagerPage() {
                   <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 opacity-0 group-hover:opacity-100 blur-2xl transition" />
 
                   {/* Thumbnail */}
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    {d.cover_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                  <div className="relative aspect-[16/10] overflow-hidden group">
+                    {/* --- Ưu tiên hiển thị VIDEO nếu có --- */}
+                    {d.video_url ? (
+                      <>
+                        <video
+                          src={d.video_url}
+                          playsInline
+                          muted
+                          loop
+                          preload="metadata"
+                          poster={d.cover_image_url ?? undefined}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        {/* Nút xem video luôn hiện */}
+                        <div className="absolute inset-0 z-10 grid place-items-center">
+                          <VideoDialog
+                            url={d.video_url}
+                            poster={d.cover_image_url}
+                            trigger="overlay"
+                          />
+                        </div>
+                      </>
+                    ) : d.cover_image_url ? (
+                      // fallback: chỉ có ảnh
                       <img
                         src={d.cover_image_url}
                         alt={d.title}
@@ -273,11 +296,22 @@ export default async function DishesManagerPage() {
                         loading="lazy"
                       />
                     ) : (
+                      // fallback: không có ảnh
                       <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                         <span className="text-6xl opacity-20">🍽️</span>
                       </div>
                     )}
 
+                    {/* badge xem video (nếu có) */}
+                    {d.video_url && (
+                      <div className="absolute left-3 bottom-3 z-20">
+                        <VideoDialog
+                          url={d.video_url}
+                          poster={d.cover_image_url}
+                          trigger="badge"
+                        />
+                      </div>
+                    )}
                     {/* Status badges */}
                     <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                       {/* review_status */}

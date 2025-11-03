@@ -1,6 +1,10 @@
 // components/dishes/dish-grid.tsx
 import Link from "next/link";
-import { dishImageUrl } from "@/modules/dishes/service/dish.service";
+import { dishImageUrl } from "@/modules/dishes/lib/image-url";
+import VideoDialog from "@/components/common/VideoDialog";
+import { SmartVideo } from "@/components/common/SmartVideo";
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type DishCard = {
   id?: string;
@@ -10,8 +14,20 @@ export type DishCard = {
   diet?: string | null;
   time_minutes?: number | null;
   servings?: number | null;
-  review_status?: string | null;
-} & Parameters<typeof dishImageUrl>[0];
+  review_status?: ReviewStatus | null;
+  video_url?: string | null;
+  cover_image_url?: string | null;
+  images?: string[] | string | null;
+};
+
+function firstImage(images?: string[] | string | null) {
+  if (!images) return null;
+  return Array.isArray(images) ? images[0] ?? null : images;
+}
+function getCoverUrl(d: DishCard) {
+  const raw = d.cover_image_url ?? firstImage(d.images) ?? null;
+  return dishImageUrl(raw) ?? "/placeholder.png";
+}
 
 function hashStr(s: string) {
   let h = 0;
@@ -92,16 +108,17 @@ export default function DishGrid({
   itemClassName?: string;
   hrefBuilder?: (d: DishCard) => string;
 }) {
-  const visible = (dishes ?? []).filter(
-    (d) => !d.review_status || d.review_status === "approved"
-  );
+  const visible = (dishes ?? []).filter((d) => {
+    const status = (d.review_status ?? "").toString().trim().toLowerCase();
+    return status === "approved";
+  });
 
   return (
     <ul className={className} role="list">
       {visible.map((d) => {
         const idKey = (d.id ?? d.slug ?? d.title) as string;
         const rating = fakeRatingFromId(idKey);
-        const img = dishImageUrl(d) ?? "/placeholder.png";
+        const img = getCoverUrl(d);
         const href = hrefBuilder ? hrefBuilder(d) : `/home/${d.slug}`;
         const dietKey = (d.diet || "").toLowerCase();
         const dietText = dietLabelMap[dietKey] || d.diet || undefined;
@@ -115,17 +132,42 @@ export default function DishGrid({
               aria-label={d.title}
             >
               <div className="flex flex-col">
-                {/* Image */}
-                <div className="relative overflow-hidden rounded-t-xl bg-gray-100 aspect-[4/3] sm:aspect-[3/2] md:aspect-square">
-                  <img
-                    src={img}
-                    alt={d.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                {/* Thumbnail */}
+                <div className="relative overflow-hidden rounded-t-xl bg-gray-100 aspect-[16/10] group">
+                  {/* --- Ưu tiên VIDEO nếu có --- */}
+                  {d.video_url ? (
+                    <>
+                      <SmartVideo
+                        url={d.video_url}
+                        poster={getCoverUrl(d)}
+                        className="absolute inset-0 h-full w-full object-cover"
+                        autoPlay={false}
+                        muted
+                        loop={false}
+                      />
+
+                      {/* Overlay nút mở dialog (nếu bạn vẫn muốn tách modal xem video) */}
+                      <div className="absolute inset-0 z-10 grid place-items-center">
+                        <VideoDialog
+                          url={d.video_url}
+                          poster={d.cover_image_url ?? getCoverUrl(d)}
+                          trigger="overlay"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    // fallback: chỉ có ảnh
+                    <img
+                      src={d.cover_image_url ?? getCoverUrl(d)}
+                      alt={d.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+
                   {/* top-left chips */}
-                  <div className="absolute left-2 top-2 flex items-center gap-1.5">
+                  <div className="absolute left-2 top-2 z-20 flex items-center gap-1.5">
                     <span className="inline-flex items-center rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium shadow-sm">
                       ⏱ {d.time_minutes ? `${d.time_minutes}’` : "—"}
                     </span>
@@ -133,10 +175,22 @@ export default function DishGrid({
                       🍽 {d.servings ?? "—"}
                     </span>
                   </div>
+
                   {/* rating bottom-right */}
-                  <div className="absolute right-2 bottom-2 rounded-lg bg-white/95 px-2 py-1 shadow-md">
+                  <div className="absolute right-2 bottom-2 z-20 rounded-lg bg-white/95 px-2 py-1 shadow-md">
                     <RatingStars rating={rating} />
                   </div>
+
+                  {/* badge xem video (nếu có) */}
+                  {d.video_url && (
+                    <div className="absolute left-2 bottom-2 z-20">
+                      <VideoDialog
+                        url={d.video_url}
+                        poster={d.cover_image_url ?? getCoverUrl(d)}
+                        trigger="badge"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Text block */}

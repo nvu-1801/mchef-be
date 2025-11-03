@@ -86,6 +86,7 @@ export default function AddDishButton({
               }}
               categories={categories}
               submitText="Đăng món"
+              
             />
           </div>
         </div>

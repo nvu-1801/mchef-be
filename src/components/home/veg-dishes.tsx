@@ -34,21 +34,18 @@ export default async function VegDishesSection({
   // Lấy rộng 1 lần để lọc (tùy dữ liệu của bạn có thể đổi sang truy vấn có điều kiện ở DB)
   const { items = [] } = await listDishes({
     q,
-    cat: "all",
     page: 1,
     pageSize: 48,
   });
 
   const itemsTyped = items as unknown as DishItem[];
 
-  // Lọc món chay
-  // Lọc món chay
   const veg = itemsTyped.filter((d) => {
     const v = String(d?.diet ?? "").toLowerCase();
     const status = String(d?.review_status ?? "").toLowerCase();
     return (
       (v === "veg" || v === "vegetarian" || v === "vegan") &&
-      status === "approved" // ✅ chỉ hiển thị món đã duyệt
+      status === "approved"
     );
   });
 
@@ -59,19 +56,18 @@ export default async function VegDishesSection({
   const start = (clampedPage - 1) * pageSize;
   const show = veg.slice(start, start + pageSize);
 
-  // Map sang DishCard để dùng lại DishGrid
   const dishes: DishCard[] = show.map((d) => ({
     id: String(d.id),
     slug: String(d.slug),
     title: String(d.title),
-    category_name: String(d.category_name ?? ""),
+    category_name: d.category_name ?? undefined,
     time_minutes: typeof d.time_minutes === "number" ? d.time_minutes : null,
     servings: typeof d.servings === "number" ? d.servings : null,
-    cover_image_url: String(
-      (d as { cover_image_url?: string | null }).cover_image_url ?? ""
-    ),
-    // giữ lại các trường khác nếu cần cho DishGrid
-    ...(d as Record<string, unknown>),
+    diet: (d.diet ?? null) as string | null,
+    review_status: (d as any).review_status ?? null,
+    video_url: (d as any).video_url ?? null,
+    cover_image_url: (d as any).cover_image_url ?? null,
+    images: (d as any).images ?? null,
   }));
 
   const buildHref = (p: number) => {

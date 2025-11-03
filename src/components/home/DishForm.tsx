@@ -11,6 +11,8 @@ const DIET_OPTIONS = [
   { value: "vegan", label: "🌱 Vegan", icon: "🌱" },
 ];
 
+const VIDEO_MAX_MB = 200;
+
 export default function DishForm({
   action,
   categories,
@@ -27,6 +29,7 @@ export default function DishForm({
     time_minutes: number | null;
     servings: number | null;
     tips: string | null;
+    video_url: string | null;
     published: boolean;
   }>;
   submitText?: string;
@@ -36,6 +39,9 @@ export default function DishForm({
   );
   const [imageSource, setImageSource] = useState<"url" | "upload">("url");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+ const [videoSource, setVideoSource] = useState<"url"|"upload">("url");
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(defaultValues?.video_url ?? null);
+  const [uploadedVideo, setUploadedVideo] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,6 +55,23 @@ export default function DishForm({
     }
   };
 
+   const handleVideoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > VIDEO_MAX_MB * 1024 * 1024) {
+      alert(`Video quá lớn (> ${VIDEO_MAX_MB}MB)`);
+      e.currentTarget.value = "";
+      return;
+    }
+    setUploadedVideo(f);
+    setVideoPreviewUrl(URL.createObjectURL(f));
+  };
+
+  const handleVideoUrlChange = (url: string) => {
+    setVideoPreviewUrl(url || null);
+    setUploadedVideo(null);
+  };
+
   const handleUrlChange = (url: string) => {
     setCoverPreview(url || null);
     setUploadedFile(null);
@@ -56,7 +79,7 @@ export default function DishForm({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <form action={action} className="space-y-6">
+      <form action={action} className="space-y-6" encType="multipart/form-data">
         {/* Title Section */}
         <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
           <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 opacity-50 blur-3xl" />
@@ -292,6 +315,93 @@ export default function DishForm({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+         {/* VIDEO SECTION */}
+        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white text-xl shadow-lg">
+              🎬
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Video</h3>
+          </div>
+
+          {/* Switch URL / Upload */}
+          <div className="flex gap-2 p-1 bg-gray-100 rounded-xl mb-4">
+            <button
+              type="button"
+              onClick={() => setVideoSource("url")}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                videoSource === "url" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              🔗 URL
+            </button>
+            <button
+              type="button"
+              onClick={() => setVideoSource("upload")}
+              className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
+                videoSource === "upload" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              📁 Upload
+            </button>
+          </div>
+
+          {/* báo cho server biết đang chọn gì */}
+          <input type="hidden" name="video_source" value={videoSource} />
+
+          {videoSource === "url" ? (
+            <div className="space-y-2">
+              <input
+                name="video_url"
+                defaultValue={defaultValues?.video_url ?? ""}
+                placeholder="https://example.com/video.mp4"
+                onChange={(e) => handleVideoUrlChange(e.target.value)}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 placeholder:text-gray-400 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition"
+              />
+              <p className="text-xs text-gray-500">Hỗ trợ link trực tiếp `.mp4`, hoặc HLS `.m3u8` (trình duyệt hỗ trợ).</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="file"
+                name="video_file"
+                accept="video/*"
+                onChange={handleVideoFile}
+                className="hidden"
+                id="video-upload"
+              />
+              <label
+                htmlFor="video-upload"
+                className="block w-full rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 text-center cursor-pointer
+                           hover:border-purple-400 hover:bg-purple-50/50 transition"
+              >
+                <div className="text-sm font-medium text-gray-700">
+                  {uploadedVideo ? uploadedVideo.name : "Chọn video từ máy"}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">Tối đa {VIDEO_MAX_MB}MB</div>
+              </label>
+            </div>
+          )}
+
+          {/* Preview */}
+          <div className="mt-4">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Preview</div>
+            {videoPreviewUrl ? (
+              <div className="rounded-2xl overflow-hidden border">
+                <video src={videoPreviewUrl} controls className="w-full" />
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 aspect-video flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl mb-2 opacity-20">🎬</div>
+                  <div className="text-sm text-gray-400">No preview</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

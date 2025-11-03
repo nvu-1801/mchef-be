@@ -2,7 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export function GlobalLoading() {
+export default function GlobalLoading() {
   const pathname = usePathname();
   const router = useRouter();
   const [loading, setLoading] = useState(false);

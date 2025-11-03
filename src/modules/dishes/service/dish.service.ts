@@ -44,19 +44,19 @@ function isAbsoluteUrl(u: string) {
   return /^https?:\/\//i.test(u) || u.startsWith("data:") || u.startsWith("//");
 }
 
-export function resolveImageUrl(raw?: string | null): string | null {
-  if (!raw) return null;
+// export function resolveImageUrl(raw?: string | null): string | null {
+//   if (!raw) return null;
 
-  // ✅ Bảo vệ: chỉ trim nếu là string
-  const url = typeof raw === "string" ? raw.trim() : String(raw ?? "");
+//   // ✅ Bảo vệ: chỉ trim nếu là string
+//   const url = typeof raw === "string" ? raw.trim() : String(raw ?? "");
 
-  if (!url) return null;
-  if (isAbsoluteUrl(url)) return url.startsWith("//") ? `https:${url}` : url;
-  if (url.startsWith("/")) return url;
+//   if (!url) return null;
+//   if (isAbsoluteUrl(url)) return url.startsWith("//") ? `https:${url}` : url;
+//   if (url.startsWith("/")) return url;
 
-  // fallback: thêm đường dẫn CDN/public nếu cần
-  return `/images/${url}`;
-}
+//   // fallback: thêm đường dẫn CDN/public nếu cần
+//   return `/images/${url}`;
+// }
 
 /* =========================
  * 3) DISHES LIST
@@ -139,4 +139,4 @@ export async function getDishFullBySlug(slug: string) {
   if (!data) throw new Error("NOT_FOUND");
   return data;
 }
-export const dishImageUrl = resolveImageUrl;
+// export const dishImageUrl = resolveImageUrl;

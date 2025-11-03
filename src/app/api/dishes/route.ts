@@ -109,18 +109,20 @@ export async function GET(request: Request) {
   // ====== SAU KHI LẤY VỀ ======
 
   // Helper: lấy rating trung bình an toàn
-  function getRatingAvg(d: any) {
-    return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
-  }
-
-  // Tách món chay / mặn, sắp xếp giảm dần theo rating
-  const veg = (data ?? [])
-    .filter((d) => d.diet === "veg")
-    .sort((a, b) => getRatingAvg(b) - getRatingAvg(a));
-
-  const nonveg = (data ?? [])
-    .filter((d) => d.diet === "nonveg")
-    .sort((a, b) => getRatingAvg(b) - getRatingAvg(a));
+    function getRatingAvg(d: any) {
+      return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
+    }
+  
+    // Tách món chay / mặn, sắp xếp giảm dần theo rating
+    const items = (data ?? []) as any[];
+  
+    const veg = items
+      .filter((d: any) => d.diet === "veg")
+      .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
+  
+    const nonveg = items
+      .filter((d: any) => d.diet === "nonveg")
+      .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
 
   // Gộp lại (món chay trước, món mặn sau)
   const combined = [...veg, ...nonveg];

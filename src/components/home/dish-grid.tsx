@@ -1,7 +1,28 @@
 // components/dishes/dish-grid.tsx
 import Link from "next/link";
-import { dishImageUrl } from "@/modules/dishes/service/dish.service";
+import { dishImageUrl } from "@/modules/dishes/lib/image-url";
 import VideoDialog from "@/app/(products)/posts/manager/VideoDialog";
+
+type DishGridProps = {
+  dishes: Array<{
+    id?: string;
+    slug: string;
+    title: string;
+    category_name?: string;
+    diet?: string | null;
+    time_minutes?: number | null;
+    servings?: number | null;
+    review_status?: string;
+    video_url?: string | null;
+    cover_image_url?: string | null;
+  }>;
+  className?: string;
+};
+
+type DishImageLike = {
+  cover_image_url?: string | null;
+  images?: string[] | string | null;
+};
 
 export type DishCard = {
   id?: string;
@@ -14,7 +35,32 @@ export type DishCard = {
   review_status?: string | null;
   video_url?: string | null;
   cover_image_url?: string | null;
-} & Parameters<typeof dishImageUrl>[0];
+} & DishImageLike;
+
+function firstImage(images?: string[] | string | null) {
+  if (!images) return null;
+  return Array.isArray(images) ? images[0] ?? null : images;
+}
+
+function getCoverUrl(d: DishCard) {
+  const raw = d.cover_image_url ?? firstImage(d.images) ?? null;
+  // dishImageUrl kỳ vọng string|null|undefined
+  return dishImageUrl(raw) ?? "/placeholder.png";
+}
+
+
+// export type DishCard = {
+//   id?: string;
+//   slug: string;
+//   title: string;
+//   category_name?: string;
+//   diet?: string | null;
+//   time_minutes?: number | null;
+//   servings?: number | null;
+//   review_status?: string | null;
+//   video_url?: string | null;
+//   cover_image_url?: string | null;
+// } & Parameters<typeof dishImageUrl>[0];
 
 function hashStr(s: string) {
   let h = 0;
@@ -104,7 +150,7 @@ export default function DishGrid({
       {visible.map((d) => {
         const idKey = (d.id ?? d.slug ?? d.title) as string;
         const rating = fakeRatingFromId(idKey);
-        const img = dishImageUrl(d) ?? "/placeholder.png";
+        const img = getCoverUrl(d);
         const href = hrefBuilder ? hrefBuilder(d) : `/home/${d.slug}`;
         const dietKey = (d.diet || "").toLowerCase();
         const dietText = dietLabelMap[dietKey] || d.diet || undefined;
@@ -129,11 +175,7 @@ export default function DishGrid({
                         muted
                         loop
                         preload="metadata"
-                        poster={
-                          d.cover_image_url ??
-                          dishImageUrl(d) ??
-                          "/placeholder.png"
-                        }
+                        poster={ d.cover_image_url ?? getCoverUrl(d) }
                         className="pointer-events-none absolute inset-0 h-full w-full object-cover"
                       />
 
@@ -141,9 +183,7 @@ export default function DishGrid({
                       <div className="absolute inset-0 z-10 grid place-items-center">
                         <VideoDialog
                           url={d.video_url}
-                          poster={
-                            d.cover_image_url ?? dishImageUrl(d) ?? undefined
-                          }
+                          poster={ d.cover_image_url ?? getCoverUrl(d)}
                           trigger="overlay"
                         />
                       </div>
@@ -151,11 +191,7 @@ export default function DishGrid({
                   ) : (
                     // fallback: chỉ có ảnh
                     <img
-                      src={
-                        d.cover_image_url ??
-                        dishImageUrl(d) ??
-                        "/placeholder.png"
-                      }
+                      src={ d.cover_image_url ?? getCoverUrl(d) }
                       alt={d.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
@@ -183,9 +219,7 @@ export default function DishGrid({
                     <div className="absolute left-2 bottom-2 z-20">
                       <VideoDialog
                         url={d.video_url}
-                        poster={
-                          d.cover_image_url ?? dishImageUrl(d) ?? undefined
-                        }
+                        poster={ d.cover_image_url ?? getCoverUrl(d) }
                         trigger="badge"
                       />
                     </div>

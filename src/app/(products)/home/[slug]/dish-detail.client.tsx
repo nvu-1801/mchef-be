@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
@@ -688,7 +690,7 @@ export default function DishDetailClient({
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

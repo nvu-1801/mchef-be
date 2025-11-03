@@ -34,7 +34,6 @@ export default async function VegDishesSection({
   // Lấy rộng 1 lần để lọc (tùy dữ liệu của bạn có thể đổi sang truy vấn có điều kiện ở DB)
   const { items = [] } = await listDishes({
     q,
-    cat: "all",
     page: 1,
     pageSize: 48,
   });
@@ -60,7 +59,7 @@ export default async function VegDishesSection({
   const show = veg.slice(start, start + pageSize);
 
   // Map sang DishCard để dùng lại DishGrid
-  const dishes: DishCard[] = show.map((d) => ({
+  const dishes = show.map((d) => ({
     id: String(d.id),
     slug: String(d.slug),
     title: String(d.title),
@@ -72,7 +71,7 @@ export default async function VegDishesSection({
     ),
     // giữ lại các trường khác nếu cần cho DishGrid
     ...(d as Record<string, unknown>),
-  }));
+  })) as DishCard[];
 
   const buildHref = (p: number) => {
     const usp = new URLSearchParams();

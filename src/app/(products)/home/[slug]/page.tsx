@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
-import {
-  dishImageUrl,
-  getDishFullBySlug,
-} from "@/modules/dishes/service/dish.service";
+import { dishImageUrl } from "@/modules/dishes/lib/image-url";
+import { getDishFullBySlug } from "@/modules/dishes/service/dish.service";
 import DishDetailClient from "./dish-detail.client";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
@@ -19,7 +17,9 @@ export default async function DishDetailPage({ params }: Props) {
   try {
     const dish = await getDishFullBySlug(slug);
     const coverUrl =
-      dishImageUrl(dish) ?? dish.cover_image_url ?? "/placeholder.png";
+      dishImageUrl(dish.cover_image_url) ??
+      dish.cover_image_url ??
+      "/placeholder.png";
 
     const ratings = dish.ratings ?? [];
     const ratingCount = ratings.length;
@@ -44,7 +44,7 @@ export default async function DishDetailPage({ params }: Props) {
         coverUrl={coverUrl}
         ratingAvg={ratingAvg}
         ratingCount={ratingCount}
-        currentUser={currentUser} 
+        currentUser={currentUser}
       />
     );
   } catch (e: unknown) {

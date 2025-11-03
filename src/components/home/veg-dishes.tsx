@@ -2,6 +2,7 @@
 import Link from "next/link";
 import DishGrid, { type DishCard } from "@/components/home/dish-grid";
 import { listDishes } from "@/modules/dishes/service/dish.service";
+import type { Dish } from "@/modules/dishes/dish-public";
 
 export const revalidate = 60;
 
@@ -14,17 +15,8 @@ type Props = {
   q?: string;
 };
 
-type DishItem = {
-  id: string;
-  slug: string;
-  title: string;
-  category_name?: string | null;
-  time_minutes?: number | null;
-  servings?: number | null;
-  diet?: string | null;
-  cover_image_url?: string | null;
-  [k: string]: unknown;
-};
+// Use the shared `Dish` type from the service to avoid unknown casts
+type DishItem = Dish & { [k: string]: unknown };
 
 export default async function VegDishesSection({
   page = 1,
@@ -38,7 +30,8 @@ export default async function VegDishesSection({
     pageSize: 48,
   });
 
-  const itemsTyped = items as unknown as DishItem[];
+  // `listDishes` returns `items: Dish[]` so we can treat them as DishItem
+  const itemsTyped = items as DishItem[];
 
   const veg = itemsTyped.filter((d) => {
     const v = String(d?.diet ?? "").toLowerCase();
@@ -60,14 +53,17 @@ export default async function VegDishesSection({
     id: String(d.id),
     slug: String(d.slug),
     title: String(d.title),
-    category_name: d.category_name ?? undefined,
+    category_name:
+      typeof (d as Record<string, unknown>).category_name === "string"
+        ? (d as unknown as { category_name: string }).category_name
+        : undefined,
     time_minutes: typeof d.time_minutes === "number" ? d.time_minutes : null,
     servings: typeof d.servings === "number" ? d.servings : null,
     diet: (d.diet ?? null) as string | null,
-    review_status: (d as any).review_status ?? null,
-    video_url: (d as any).video_url ?? null,
-    cover_image_url: (d as any).cover_image_url ?? null,
-    images: (d as any).images ?? null,
+    review_status: d.review_status ?? null,
+    video_url: d.video_url ?? null,
+    cover_image_url: d.cover_image_url ?? null,
+
   }));
 
   const buildHref = (p: number) => {

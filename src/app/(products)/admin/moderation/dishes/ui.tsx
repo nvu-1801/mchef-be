@@ -147,11 +147,11 @@ export default function ModerationDishesClient() {
         cache: "no-store",
       });
       const data: ListRes | { error: string } = await res.json();
-      if (!res.ok) throw new Error((data as any).error || "Load failed");
+      if (!res.ok) throw new Error("error" in data ? data.error : "Load failed");
       setItems((data as ListRes).items);
       setTotal((data as ListRes).pagination.total);
-    } catch (e: any) {
-      setError(e.message || "Error");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error");
     } finally {
       setLoading(false);
     }
@@ -185,8 +185,8 @@ export default function ModerationDishesClient() {
       setItems((prev) =>
         prev.map((it) => (it.id === id ? { ...it, ...data.item } : it))
       );
-    } catch (e: any) {
-      alert(e.message || "Không thể thực hiện");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Không thể thực hiện");
     } finally {
       setActLoading(null);
     }
@@ -216,7 +216,7 @@ export default function ModerationDishesClient() {
         <select
           value={status}
           onChange={(e) => {
-            setStatus(e.target.value as any);
+            setStatus(e.target.value as "pending" | "approved" | "rejected");
             setOffset(0);
           }}
           className="rounded-xl border p-2"

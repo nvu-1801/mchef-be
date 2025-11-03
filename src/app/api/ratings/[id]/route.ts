@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const stars = body?.stars as number | undefined;
   const commentRaw = (body?.comment ?? undefined) as string | undefined;
 
-  const patch: Record<string, any> = {};
+const patch: Record<string, unknown> = {};
   if (typeof stars !== "undefined") {
     if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
       return NextResponse.json({ error: "Stars must be 1..5" }, { status: 400 });

@@ -11,13 +11,21 @@ const GlobalLoading = dynamic(
   { ssr: false }
 );
 
+type User = {
+  id: string;
+  email?: string;
+  display_name?: string;
+  avatar_url?: string;
+  // Add other user properties as needed
+};
+
 export default function ProductsLayoutClient({
   children,
   user,
   isAdmin,
 }: {
   children: React.ReactNode;
-  user: any;
+  user: User | null;
   isAdmin: boolean;
 }) {
   return (

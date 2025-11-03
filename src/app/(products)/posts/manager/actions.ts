@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
@@ -44,8 +45,7 @@ function makeUUID() {
   }
   // fallback Node crypto nếu có (đỡ lệ thuộc build target)
   try {
-    // @ts-ignore
-    return require("crypto").randomUUID();
+    return randomUUID();
   } catch {
     // fallback cuối
     return Math.random().toString(16).slice(2) + Date.now().toString(16);

@@ -65,11 +65,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  let items = (data ?? []) as any[];
+  // Kiểu cho hàng trả về từ Supabase (thô)
+  type RawUser = RatingUser | RatingUser[] | null | undefined;
+  type RawRow = {
+    id: string;
+    dish_id: string;
+    user_id: string;
+    stars: number;
+    comment: string | null;
+    created_at: string;
+    user?: RawUser;
+  };
+
+  // Chuyển 'data' (unknown) thành mảng đã typed; an toàn nếu data không phải array → []
+  let items: RawRow[] = Array.isArray(data) ? (data as RawRow[]) : [];
 
   // tie-breaker tại server khi created_at == cursor
   if (cursor && cursorId) {
-    items = items.filter((row) => {
+    items = items.filter((row: RawRow) => {
       if (row.created_at < cursor) return true;
       if (row.created_at > cursor) return false;
       // created_at == cursor → id < cursorId (vì desc)
@@ -96,13 +109,16 @@ export async function GET(req: Request) {
     stars: r.stars,
     comment: r.comment ?? null,
     created_at: r.created_at,
-    user: r.user
-      ? {
-          id: r.user.id,
-          display_name: r.user.display_name,
-          avatar_url: r.user.avatar_url,
-        }
-      : null,
+    user: (() => {
+      const userRow = Array.isArray(r.user) ? r.user[0] ?? null : r.user ?? null;
+      return userRow
+        ? {
+            id: userRow.id,
+            display_name: userRow.display_name,
+            avatar_url: userRow.avatar_url,
+          }
+        : null;
+    })(),
   }));
 
   return NextResponse.json({

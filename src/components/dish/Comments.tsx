@@ -60,7 +60,7 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
       const data: FetchRes = await res.json();
 
       if (!res.ok) {
-        throw new Error((data as any)?.error || "Load comments failed");
+        throw new Error((data as { error?: string })?.error || "Load comments failed");
       }
 
       if (reset) {
@@ -72,8 +72,8 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
       setHasMore(data.hasMore);
       setCursor(data.nextCursor);
       setCursorId(data.nextCursorId);
-    } catch (e: any) {
-      setError(e.message || "Something went wrong");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -136,10 +136,10 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
         cloned[idx] = data.item;
         return cloned;
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Rollback optimistic
       setItems((prev) => prev.filter((x) => x.id !== tmpId));
-      setError(e.message || "Không thể gửi bình luận");
+      setError(e instanceof Error ? e.message : "Không thể gửi bình luận");
       setContent(payload.content); // trả lại nội dung
     } finally {
       setPosting(false);
@@ -157,8 +157,8 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Delete failed");
       }
-    } catch (e: any) {
-      setError(e.message || "Không thể xoá");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Không thể xoá");
       setItems(snapshot); // rollback
     }
   };

@@ -4,28 +4,24 @@ import { z } from "zod";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createClient } from "@supabase/supabase-js";
 
-// ⚠️ Nếu enum diet của bạn khác (vd: 'veg' | 'nonveg' | 'vegan' ...)
-// hãy đổi validator dưới đây cho khớp. Ở đây cho phép string để không kẹt enum.
+/* =====================
+ * 1. VALIDATION SCHEMA
+ * ===================== */
 const CreateDish = z.object({
   title: z.string().min(1).max(160),
-  slug: z
-    .string()
-    .min(1)
-    .max(160)
-    .regex(/^[a-z0-9-]+$/),
-  cover_image_url: z
-    .string()
-    .url()
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
-  category_id: z.string().uuid(), // liên kết tới bảng categories (UUID)
-  diet: z.string().min(1).max(30).optional(), // đổi sang z.enum([...]) nếu muốn chặt chẽ
+  slug: z.string().min(1).max(160).regex(/^[a-z0-9-]+$/),
+  cover_image_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  category_id: z.string().uuid(),
+  diet: z.string().min(1).max(30).optional(), // "veg" | "nonveg"
   time_minutes: z.number().int().min(0).max(100000).optional(),
   servings: z.number().int().min(1).max(1000).optional(),
   tips: z.string().max(5000).optional(),
   published: z.boolean().optional(),
 });
 
+/* =====================
+ * 2. GET /api/dishes
+ * ===================== */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() || "";
@@ -33,69 +29,99 @@ export async function GET(request: Request) {
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
   const category_id = searchParams.get("category_id") || undefined;
-  const diet = searchParams.get("diet") || undefined;
-  const publishedParam = searchParams.get("published");
-  const published =
-    typeof publishedParam === "string" ? publishedParam === "true" : undefined;
+  const diet = searchParams.get("diet") || undefined; // veg | nonveg
+  const highlight = searchParams.get("highlight") === "true"; // nổi bật
+  const sortBy = searchParams.get("sort") || "rating"; // rating | created_at | servings
 
   const sb = await supabaseServer();
 
+  // ====== TRUY VẤN CƠ BẢN ======
   let query = sb
     .from("dishes")
     .select(
       `
-    id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
-    created_by, published, created_at, updated_at,
-    category:category_id ( id, slug, name, icon ),
-    dish_images ( id, image_url, alt, sort ),
-    recipe_steps ( step_no, content, image_url ),
-    dish_ingredients (
-      amount, note,
-      ingredient:ingredient_id ( id, name, unit )
-    ),
-    ratings ( user_id, stars, comment, created_at ),
-    favorites ( user_id ),
-    creator:created_by ( id, display_name, avatar_url )
+      id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
+      created_by, published, created_at, updated_at,
+      category:category_id ( id, slug, name, icon ),
+      dish_rating_stats ( rating_avg, rating_count ),
+      dish_images ( id, image_url, alt, sort ),
+      recipe_steps ( step_no, content, image_url ),
+      dish_ingredients ( amount, note, ingredient:ingredient_id ( id, name, unit ) ),
+      ratings ( user_id, stars, comment, created_at ),
+      favorites ( user_id ),
+      creator:created_by ( id, display_name, avatar_url )
     `,
       { count: "exact" }
     )
-    .order("created_at", { ascending: false })
-    .order("sort", { foreignTable: "dish_images", ascending: true })
-    .order("step_no", { foreignTable: "recipe_steps", ascending: true })
-    // nếu lỗi ở dòng dưới (vì foreign table lồng 2 cấp), hãy bỏ hoặc đổi sang 'ingredient'
-    .order("name", {
-      foreignTable: "dish_ingredients.ingredient",
-      ascending: true,
-    })
-    .order("created_at", { foreignTable: "ratings", ascending: false });
+    .eq("published", true);
 
+  // ====== LỌC ======
   if (q) query = query.ilike("title", `%${q}%`);
   if (category_id) query = query.eq("category_id", category_id);
   if (diet) query = query.eq("diet", diet);
-  if (typeof published === "boolean") query = query.eq("published", published);
 
-  const { data, error, count } = await query.range(offset, offset + limit - 1);
-
-  if (error) {
-    return NextResponse.json(
-      { error: "List failed", detail: error.message },
-      { status: 500 }
-    );
+  // ====== SẮP XẾP ======
+  if (highlight) {
+    // Món nổi bật = nhiều lượt rating và điểm cao
+    query = query
+      .order("rating_count", { foreignTable: "dish_rating_stats", ascending: false })
+      .order("rating_avg", { foreignTable: "dish_rating_stats", ascending: false })
+      .range(0, 4); // chỉ lấy top 5 món nổi bật
+  } else if (sortBy === "rating") {
+    query = query.order("rating_avg", { foreignTable: "dish_rating_stats", ascending: false });
+  } else if (sortBy === "created_at") {
+    query = query.order("created_at", { ascending: false });
+  } else if (sortBy === "servings") {
+    query = query.order("servings", { ascending: false });
+  } else {
+    query = query.order("title", { ascending: true });
   }
 
+  // ====== PHÂN TRANG ======
+  if (!highlight) query = query.range(offset, offset + limit - 1);
+
+  // ====== THỰC THI ======
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error("[GET /api/dishes] Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // ====== SAU KHI LẤY VỀ ======
+
+  // Helper: lấy rating trung bình an toàn
+  function getRatingAvg(d: any) {
+    return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
+  }
+
+  // Tách món chay / mặn, sắp xếp giảm dần theo rating
+  const veg = (data ?? [])
+    .filter((d) => d.diet === "veg")
+    .sort((a, b) => getRatingAvg(b) - getRatingAvg(a));
+
+  const nonveg = (data ?? [])
+    .filter((d) => d.diet === "nonveg")
+    .sort((a, b) => getRatingAvg(b) - getRatingAvg(a));
+
+  // Gộp lại (món chay trước, món mặn sau)
+  const combined = [...veg, ...nonveg];
+
   return NextResponse.json({
-    items: data ?? [],
+    items: combined,
     pagination: { limit, offset, total: count ?? 0 },
   });
 }
 
+/* =====================
+ * 3. POST /api/dishes
+ * ===================== */
 export async function POST(req: Request) {
-  // Lấy Bearer token
   const authHeader = req.headers.get("authorization") || "";
   const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!jwt) return new Response("Unauthorized", { status: 401 });
 
-  // (tuỳ chọn) Verify JWT trước bằng service role (để báo 401 sớm nếu token sai)
+  // ✅ Verify JWT bằng service key
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -105,17 +131,16 @@ export async function POST(req: Request) {
   if (vErr || !u?.user) return new Response("Invalid token", { status: 401 });
   const user = u.user;
 
-  // ✅ Tạo client “mang danh user” để RLS nhận diện auth.uid()
+  // ✅ Client gắn JWT => RLS pass
   const userClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // dùng anon key
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: { persistSession: false, detectSessionInUrl: false },
-      global: { headers: { Authorization: `Bearer ${jwt}` } }, // quan trọng
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
     }
   );
 
-  // Validate body
   const json = await req.json().catch(() => ({}));
   const parsed = CreateDish.safeParse(json);
   if (!parsed.success) {
@@ -124,9 +149,9 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
   const payload = parsed.data;
 
-  // Insert bằng client đã gắn JWT ⇒ RLS pass (auth.uid() = user.id)
   const { data, error } = await userClient
     .from("dishes")
     .insert({
@@ -139,7 +164,7 @@ export async function POST(req: Request) {
       servings: payload.servings ?? null,
       tips: payload.tips ?? null,
       published: payload.published ?? false,
-      created_by: user.id, // server quyết định
+      created_by: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -149,11 +174,8 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    // sẽ thấy thông điệp RLS/constraint rõ ràng ở đây nếu còn lỗi
-    return NextResponse.json(
-      { error: "Create failed", detail: error.message },
-      { status: 500 }
-    );
+    console.error("[POST /api/dishes] Insert error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json(data, { status: 201 });

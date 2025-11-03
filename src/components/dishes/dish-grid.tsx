@@ -1,6 +1,8 @@
-// components/dishes/dish-grid.tsx
+// ================================
+// src/components/dishes/dish-grid.tsx
+// ================================
 import Link from "next/link";
-import { dishImageUrl } from "@/modules/dishes/service/dish.service";
+import { dishImageUrlClient as dishImageUrl } from "@/modules/dishes/service/dish.client";
 
 export type DishCard = {
   id?: string;
@@ -9,7 +11,6 @@ export type DishCard = {
   category_name?: string;
   time_minutes?: number | null;
   servings?: number | null;
-  // các field ảnh mà dishImageUrl cần (ví dụ path/bucket/..)
 } & Parameters<typeof dishImageUrl>[0];
 
 function hashStr(s: string) {
@@ -17,6 +18,7 @@ function hashStr(s: string) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h >>> 0;
 }
+
 function fakeRatingFromId(id: string) {
   const steps = [3.5, 4, 4.5, 5];
   return steps[hashStr(id) % steps.length];
@@ -73,11 +75,8 @@ export default function DishGrid({
   hrefBuilder,
 }: {
   dishes: DishCard[];
-  /** tuỳ biến grid ngoài (ví dụ ép 2 hàng với 6 cột ở xl) */
   className?: string;
-  /** thêm class cho mỗi item/card */
   itemClassName?: string;
-  /** custom link detail, mặc định dùng slug: /home/[slug] */
   hrefBuilder?: (d: DishCard) => string;
 }) {
   return (
@@ -104,10 +103,7 @@ export default function DishGrid({
                     loading="lazy"
                     decoding="async"
                   />
-
-                  {/* hover overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
                   <div className="absolute left-3 top-3 flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium shadow-sm">
                       ⏱ {d.time_minutes ? `${d.time_minutes} phút` : "—"}
@@ -116,7 +112,6 @@ export default function DishGrid({
                       🍽 {d.servings ? `${d.servings} phần` : "—"}
                     </span>
                   </div>
-
                   <div className="absolute right-3 bottom-3">
                     <div className="rounded-xl bg-white/95 px-2.5 py-1 shadow-md">
                       <RatingStars rating={rating} />

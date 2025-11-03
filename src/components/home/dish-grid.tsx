@@ -4,7 +4,6 @@ import { dishImageUrl } from "@/modules/dishes/lib/image-url";
 import VideoDialog from "@/app/(products)/posts/manager/VideoDialog";
 import { SmartVideo } from "@/components/common/SmartVideo";
 
-// ❌ bỏ phần & Parameters<typeof dishImageUrl>[0]
 export type DishCard = {
   id?: string;
   slug: string;

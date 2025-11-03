@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
+import { SmartVideo } from "@/components/common/SmartVideo";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
 type Props = {
@@ -156,7 +157,9 @@ export default function DishDetailClient({
                     {/* Diet */}
                     {dish.diet && (
                       <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-white/50 px-3 py-1.5 text-xs font-bold shadow-lg hover:scale-105 transition-transform">
-                        <span className="text-base">{dietIcons[dish.diet]}</span>
+                        <span className="text-base">
+                          {dietIcons[dish.diet]}
+                        </span>
                         <span className="text-gray-800">
                           {dietLabels[dish.diet]}
                         </span>
@@ -277,16 +280,14 @@ export default function DishDetailClient({
 
                   <div className="relative overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-black/5">
                     <div className="aspect-video">
-                      <video
-                        controls
-                        className="w-full h-full"
+                      <SmartVideo
+                        url={videoUrl}
                         poster={coverUrl}
-                        preload="metadata"
-                      >
-                        <source src={videoUrl} type="video/mp4" />
-                        <source src={videoUrl} type="video/webm" />
-                        Trình duyệt của bạn không hỗ trợ video.
-                      </video>
+                        className="w-full h-full"
+                        autoPlay={false}
+                        muted
+                        loop={false}
+                      />
                     </div>
                   </div>
                 </div>
@@ -499,7 +500,9 @@ export default function DishDetailClient({
                       <h3 className="text-lg font-bold text-gray-900">
                         Mẹo hay
                       </h3>
-                      <p className="text-sm text-gray-600">Bí quyết thành công</p>
+                      <p className="text-sm text-gray-600">
+                        Bí quyết thành công
+                      </p>
                     </div>
                   </div>
 
@@ -604,7 +607,14 @@ export default function DishDetailClient({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                        <rect
+                          x="2"
+                          y="2"
+                          width="20"
+                          height="20"
+                          rx="5"
+                          ry="5"
+                        />
                         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                         <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                       </svg>
@@ -642,7 +652,14 @@ export default function DishDetailClient({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <rect
+                          x="9"
+                          y="9"
+                          width="13"
+                          height="13"
+                          rx="2"
+                          ry="2"
+                        />
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                     </div>

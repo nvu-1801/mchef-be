@@ -9,9 +9,11 @@ import SignOutButton from "@/components/auth/SignOutButton";
 type Props = {
   isAdmin: boolean;
   user: { id: string } | null;
+  /** Hiển thị icon chat cho role chef */
+  isChef?: boolean;
 };
 
-export default function HeaderBar({ isAdmin, user }: Props) {
+export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
   const [open, setOpen] = useState(false);
 
   const NavLink = ({ href, label }: { href: string; label: string }) => (
@@ -56,6 +58,27 @@ export default function HeaderBar({ isAdmin, user }: Props) {
               {/* Right actions (desktop + mobile) */}
               <div className="hidden sm:flex items-center gap-2 md:gap-3">
                 <AdminDropdown isAdmin={isAdmin} />
+
+                {/* === NEW: Chef Chat Icon (desktop) === */}
+                {isChef && (
+                  <Link
+                    href="/chef/chat"
+                    className="relative inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold
+                               text-gray-700 hover:bg-gray-50 border"
+                    title="Chef Chat"
+                    aria-label="Chef Chat"
+                  >
+                    <span className="relative">
+                      <svg className="w-5 h-5 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z" />
+                      </svg>
+                      {/* dot thông báo (tùy, có thể ẩn nếu chưa cần) */}
+                      <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-gradient-to-r from-pink-500 to-violet-500" />
+                    </span>
+                    <span className="hidden lg:inline">Chat</span>
+                  </Link>
+                )}
+
                 <Link
                   href="/upgrade"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-violet-600 hover:bg-violet-50 transition"
@@ -132,13 +155,21 @@ export default function HeaderBar({ isAdmin, user }: Props) {
                   <Link href="/upgrade" onClick={() => setOpen(false)} className="flex-1 rounded-xl px-3 py-2 text-sm font-bold text-violet-700 bg-violet-50 hover:bg-violet-100">
                     Upgrade
                   </Link>
-                  {user ? (
-                    <Link href="/profile/me" onClick={() => setOpen(false)} className="flex-1 rounded-xl px-3 py-2 text-sm font-bold text-white bg-gradient-to-r from-sky-500 via-violet-500 to-pink-500 text-center">
-                      Profile
-                    </Link>
-                  ) : (
-                    <Link href="/auth/signin" onClick={() => setOpen(false)} className="flex-1 rounded-xl px-3 py-2 text-sm font-bold text-white bg-sky-600 text-center">
-                      Đăng nhập
+
+                  {/* === NEW: Chef Chat Icon (mobile) === */}
+                  {isChef && (
+                    <Link
+                      href="/chef/chat"
+                      onClick={() => setOpen(false)}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold
+                                 text-gray-700 bg-white border hover:bg-gray-50"
+                      aria-label="Chef Chat"
+                      title="Chef Chat"
+                    >
+                      <svg className="w-5 h-5 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z" />
+                      </svg>
+                      <span>Chat</span>
                     </Link>
                   )}
                 </div>

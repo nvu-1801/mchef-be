@@ -5,7 +5,7 @@ import { listDishesClient as listDishes } from "@/modules/dishes/service/dish.cl
 import Carousel from "@/components/common/Carousel";
 import SearchBar from "@/components/common/SearchBar";
 import SideToc from "@/components/common/side-toc";
-import DishGrid from "@/components/dishes/dish-grid";
+import DishGrid from "@/components/home/dish-grid";
 import { Dish } from "@/modules/dishes/dish-public";
 
 const PAGE_SIZE = 10;
@@ -88,7 +88,9 @@ export default function HomePage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Khám phá món ăn</h1>
-              <p className="text-sm text-white/90 mt-1">{totalAll ?? 0} món ăn từ các đầu bếp tài năng</p>
+              <p className="text-sm text-white/90 mt-1">
+                {totalAll ?? 0} món ăn từ các đầu bếp tài năng
+              </p>
             </div>
           </div>
         </div>
@@ -163,6 +165,8 @@ export default function HomePage() {
   );
 }
 
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
 function Section({
   id,
   icon,
@@ -178,11 +182,24 @@ function Section({
   desc: string;
   gradient: string;
   border: string;
-  dishes: Dish[];
+  dishes: Array<{
+    id?: string;
+    slug: string;
+    title: string;
+    category_name?: string;
+    diet?: string | null;
+    time_minutes?: number | null;
+    servings?: number | null;
+    review_status?: ReviewStatus | null;
+    video_url?: string | null;
+    cover_image_url?: string | null;
+  }>;
 }) {
   return (
     <section id={id} className="scroll-mt-32">
-      <div className={`bg-gradient-to-br ${gradient} border-2 ${border} rounded-2xl p-6 shadow-lg`}>
+      <div
+        className={`bg-gradient-to-br ${gradient} border-2 ${border} rounded-2xl p-6 shadow-lg`}
+      >
         <div className="flex items-center gap-4 mb-6">
           <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-2xl">
             {icon}
@@ -192,7 +209,10 @@ function Section({
             <p className="text-sm text-gray-600 mt-1">{desc}</p>
           </div>
         </div>
-        <DishGrid dishes={dishes} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" />
+        <DishGrid
+          dishes={dishes}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+        />
       </div>
     </section>
   );
@@ -223,7 +243,9 @@ function PaginatedSection({
 }) {
   return (
     <section id={id} className="scroll-mt-32">
-      <div className={`bg-gradient-to-br ${gradient} border-2 ${border} rounded-2xl p-6 shadow-lg`}>
+      <div
+        className={`bg-gradient-to-br ${gradient} border-2 ${border} rounded-2xl p-6 shadow-lg`}
+      >
         <div className="flex items-center gap-4 mb-6">
           <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-2xl">
             {icon}
@@ -234,7 +256,10 @@ function PaginatedSection({
           </div>
         </div>
 
-        <DishGrid dishes={dishes} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" />
+        <DishGrid
+          dishes={dishes}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+        />
 
         {/* Nút chuyển trang - Style 3: Classic Simple */}
         <div className="flex justify-center items-center gap-3 mt-6">
@@ -243,25 +268,39 @@ function PaginatedSection({
             onClick={() => onPageChange(page - 1)}
             className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-purple-300 hover:text-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shadow-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
             <span>Trước</span>
           </button>
-          
-          <div className="px-4 py-2 bg-gray-50 border-2 border-gray-300 rounded-lg">
-            <span className="text-gray-700 font-medium text-sm">
-              {page} / {totalPages || 1}
-            </span>
-          </div>
-          
+
           <button
             disabled={page === totalPages}
             onClick={() => onPageChange(page + 1)}
             className="px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-purple-300 hover:text-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shadow-sm"
           >
             <span>Sau</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>

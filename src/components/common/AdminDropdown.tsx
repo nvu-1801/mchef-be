@@ -60,10 +60,10 @@ export default function AdminDropdown({ isAdmin }: { isAdmin: boolean }) {
             </li>
              <li>
               <Link
-                href="/admin/support"
+                href="/admin/moderation/dishes"
                 className="block px-3 py-1.5 text-gray-600 hover:bg-gray-100"
               >
-                Support chat
+                Moderation Dishes
               </Link>
             </li>
           </ul>

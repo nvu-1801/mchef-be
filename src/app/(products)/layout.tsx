@@ -13,13 +13,18 @@ export default async function ProductsGroupLayout({
   const user = session?.user ?? null;
 
   let isAdmin = false;
+  let isChef = false;
   if (user) {
     const { data: prof } = await sb
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-    isAdmin = prof?.role === "admin";
+
+    const role = prof?.role ?? null;
+
+    isAdmin = role === "admin";
+    isChef = role === "chef" || role === "admin";
   }
 
   return (

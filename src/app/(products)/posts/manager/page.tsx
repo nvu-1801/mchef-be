@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createDish as _createDish, deleteDish } from "./actions";
 import AddDishButton from "./AddDishButton";
+import VideoDialog from "../../../../components/common/VideoDialog";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,10 @@ type DishListItem = {
   cover_image_url: string | null;
   published: boolean;
   created_at: string | null;
+  review_status: string | null;
+  review_note: string | null;
+  video_url: string | null;
 };
-
 // ---------- Helpers (server-safe) ----------
 function hashStr(s: string) {
   let h = 0;
@@ -94,11 +97,13 @@ export default async function DishesManagerPage() {
 
   const { data: dishData } = await sb
     .from("dishes")
-    .select("id,title,cover_image_url,published,created_at")
+    .select(
+      "id,title,cover_image_url,published,created_at,review_status,review_note,video_url"
+    )
     .eq("created_by", user.id)
     .order("created_at", { ascending: false });
   const dishes: DishListItem[] = (dishData ?? []) as DishListItem[];
-
+  console.log(dishes);
   const createDishVoid = async (formData: FormData): Promise<void> => {
     "use server";
     await _createDish(formData);
@@ -106,6 +111,16 @@ export default async function DishesManagerPage() {
 
   const publishedCount = dishes.filter((d) => d.published).length;
   const draftCount = dishes.length - publishedCount;
+  const approvedCount = dishes.filter(
+    (d) => (d.review_status ?? "").toLowerCase() === "approved"
+  ).length;
+  const pendingCount = dishes.filter(
+    (d) => (d.review_status ?? "").toLowerCase() === "pending"
+  ).length;
+
+  const rejectedCount = dishes.filter(
+    (d) => (d.review_status ?? "").toLowerCase() === "rejected"
+  ).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -195,6 +210,48 @@ export default async function DishesManagerPage() {
           ))}
         </div>
 
+        {/* Review status mini-cards */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+          {/* Pending */}
+          <div className="rounded-2xl border bg-white p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⏳</span>
+              <span className="text-sm font-semibold text-gray-700">
+                Chờ duyệt
+              </span>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-bold">
+              {pendingCount}
+            </span>
+          </div>
+
+          {/* Approved */}
+          <div className="rounded-2xl border bg-white p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">✅</span>
+              <span className="text-sm font-semibold text-gray-700">
+                Đã duyệt
+              </span>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-xs font-bold">
+              {approvedCount}
+            </span>
+          </div>
+
+          {/* Rejected */}
+          <div className="rounded-2xl border bg-white p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">❌</span>
+              <span className="text-sm font-semibold text-gray-700">
+                Bị từ chối
+              </span>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-xs font-bold">
+              {rejectedCount}
+            </span>
+          </div>
+        </div>
+
         {/* Grid cards */}
         {dishes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -208,9 +265,30 @@ export default async function DishesManagerPage() {
                   <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 opacity-0 group-hover:opacity-100 blur-2xl transition" />
 
                   {/* Thumbnail */}
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    {d.cover_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                  <div className="relative aspect-[16/10] overflow-hidden group">
+                    {/* --- Ưu tiên hiển thị VIDEO nếu có --- */}
+                    {d.video_url ? (
+                      <>
+                        <video
+                          src={d.video_url}
+                          playsInline
+                          muted
+                          loop
+                          preload="metadata"
+                          poster={d.cover_image_url ?? undefined}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        {/* Nút xem video luôn hiện */}
+                        <div className="absolute inset-0 z-10 grid place-items-center">
+                          <VideoDialog
+                            url={d.video_url}
+                            poster={d.cover_image_url}
+                            trigger="overlay"
+                          />
+                        </div>
+                      </>
+                    ) : d.cover_image_url ? (
+                      // fallback: chỉ có ảnh
                       <img
                         src={d.cover_image_url}
                         alt={d.title}
@@ -218,21 +296,70 @@ export default async function DishesManagerPage() {
                         loading="lazy"
                       />
                     ) : (
+                      // fallback: không có ảnh
                       <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                         <span className="text-6xl opacity-20">🍽️</span>
                       </div>
                     )}
 
-                    {/* Status badge */}
-                    <div className="absolute left-3 top-3">
+                    {/* badge xem video (nếu có) */}
+                    {d.video_url && (
+                      <div className="absolute left-3 bottom-3 z-20">
+                        <VideoDialog
+                          url={d.video_url}
+                          poster={d.cover_image_url}
+                          trigger="badge"
+                        />
+                      </div>
+                    )}
+                    {/* Status badges */}
+                    <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                      {/* review_status */}
+                      {(() => {
+                        const s = (d.review_status ?? "").toLowerCase();
+                        if (s === "approved") {
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-lg
+                         bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                            >
+                              ✓ Approved
+                            </span>
+                          );
+                        }
+                        if (s === "pending") {
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-lg
+                         bg-gradient-to-r from-amber-400 to-orange-500 text-white"
+                            >
+                              ⏳ Pending
+                            </span>
+                          );
+                        }
+                        if (s === "rejected") {
+                          return (
+                            <span
+                              title={d.review_note || "Đã từ chối"}
+                              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-lg
+                     bg-gradient-to-r from-rose-500 to-pink-500 text-white"
+                            >
+                              ✖ Rejected
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* published/draft */}
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-lg ${
                           d.published
-                            ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
-                            : "bg-gradient-to-r from-amber-400 to-orange-500 text-white"
+                            ? "bg-white/90 text-emerald-700 border border-emerald-200"
+                            : "bg-white/90 text-gray-700 border border-gray-200"
                         }`}
                       >
-                        {d.published ? "✓ Public" : "📝 Draft"}
+                        {d.published ? "Public" : "Draft"}
                       </span>
                     </div>
 

@@ -282,12 +282,6 @@ function PaginatedSection({
             <span>Trước</span>
           </button>
 
-          <div className="px-4 py-2 bg-gray-50 border-2 border-gray-300 rounded-lg">
-            <span className="text-gray-700 font-medium text-sm">
-              {page} / {totalPages || 1}
-            </span>
-          </div>
-
           <button
             disabled={page === totalPages}
             onClick={() => onPageChange(page + 1)}

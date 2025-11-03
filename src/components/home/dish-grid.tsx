@@ -2,6 +2,22 @@
 import Link from "next/link";
 import { dishImageUrl } from "@/modules/dishes/lib/image-url";
 import VideoDialog from "@/app/(products)/posts/manager/VideoDialog";
+import { SmartVideo } from "@/components/common/SmartVideo";
+
+// ❌ bỏ phần & Parameters<typeof dishImageUrl>[0]
+export type DishCard = {
+  id?: string;
+  slug: string;
+  title: string;
+  category_name?: string;
+  diet?: string | null;
+  time_minutes?: number | null;
+  servings?: number | null;
+  review_status?: string | null;
+  video_url?: string | null;
+  cover_image_url?: string | null;
+  images?: string[] | string | null;
+};
 
 type DishGridProps = {
   dishes: Array<{
@@ -24,43 +40,15 @@ type DishImageLike = {
   images?: string[] | string | null;
 };
 
-export type DishCard = {
-  id?: string;
-  slug: string;
-  title: string;
-  category_name?: string;
-  diet?: string | null;
-  time_minutes?: number | null;
-  servings?: number | null;
-  review_status?: string | null;
-  video_url?: string | null;
-  cover_image_url?: string | null;
-} & DishImageLike;
-
 function firstImage(images?: string[] | string | null) {
   if (!images) return null;
   return Array.isArray(images) ? images[0] ?? null : images;
 }
-
 function getCoverUrl(d: DishCard) {
   const raw = d.cover_image_url ?? firstImage(d.images) ?? null;
-  // dishImageUrl kỳ vọng string|null|undefined
   return dishImageUrl(raw) ?? "/placeholder.png";
 }
 
-
-// export type DishCard = {
-//   id?: string;
-//   slug: string;
-//   title: string;
-//   category_name?: string;
-//   diet?: string | null;
-//   time_minutes?: number | null;
-//   servings?: number | null;
-//   review_status?: string | null;
-//   video_url?: string | null;
-//   cover_image_url?: string | null;
-// } & Parameters<typeof dishImageUrl>[0];
 
 function hashStr(s: string) {
   let h = 0;
@@ -169,17 +157,16 @@ export default function DishGrid({
                   {/* --- Ưu tiên VIDEO nếu có --- */}
                   {d.video_url ? (
                     <>
-                      <video
-                        src={d.video_url}
-                        playsInline
+                      <SmartVideo
+                        url={d.video_url}
+                        poster={ getCoverUrl(d) }
+                        className="absolute inset-0 h-full w-full object-cover"
+                        autoPlay={false}
                         muted
-                        loop
-                        preload="metadata"
-                        poster={ d.cover_image_url ?? getCoverUrl(d) }
-                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        loop={false}
                       />
 
-                      {/* Nút xem video ở giữa */}
+                      {/* Overlay nút mở dialog (nếu bạn vẫn muốn tách modal xem video) */}
                       <div className="absolute inset-0 z-10 grid place-items-center">
                         <VideoDialog
                           url={d.video_url}

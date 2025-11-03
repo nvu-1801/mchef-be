@@ -58,20 +58,19 @@ export default async function VegDishesSection({
   const start = (clampedPage - 1) * pageSize;
   const show = veg.slice(start, start + pageSize);
 
-  // Map sang DishCard để dùng lại DishGrid
-  const dishes = show.map((d) => ({
+  const dishes: DishCard[] = show.map((d) => ({
     id: String(d.id),
     slug: String(d.slug),
     title: String(d.title),
-    category_name: String(d.category_name ?? ""),
+    category_name: d.category_name ?? undefined,
     time_minutes: typeof d.time_minutes === "number" ? d.time_minutes : null,
     servings: typeof d.servings === "number" ? d.servings : null,
-    cover_image_url: String(
-      (d as { cover_image_url?: string | null }).cover_image_url ?? ""
-    ),
-    // giữ lại các trường khác nếu cần cho DishGrid
-    ...(d as Record<string, unknown>),
-  })) as DishCard[];
+    diet: (d.diet ?? null) as string | null,
+    review_status: (d as any).review_status ?? null,
+    video_url: (d as any).video_url ?? null,
+    cover_image_url: (d as any).cover_image_url ?? null,
+    images: (d as any).images ?? null, // nếu có
+  }));
 
   const buildHref = (p: number) => {
     const usp = new URLSearchParams();

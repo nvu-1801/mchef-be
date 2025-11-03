@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
 import { SmartVideo } from "@/components/common/SmartVideo";
+import AuthorCard from "@/components/dish/AuthorCard";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
 type Props = {
@@ -257,7 +258,7 @@ export default function DishDetailClient({
                 </div>
               </div>
             )}
-
+            {/* {dish.creator?.id && <AuthorCard chefId={dish.creator.id} />} */}
             {/* Video Section */}
             {videoUrl && (
               <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 shadow-sm">

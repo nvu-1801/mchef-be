@@ -1,5 +1,7 @@
 // src/modules/dishes/dish.public.ts
 
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
 export type Dish = {
   id: string;
   title: string;
@@ -15,6 +17,7 @@ export type Dish = {
   updated_at?: string | null;
   published?: boolean;
   created_by?: string;
+  review_status?: ReviewStatus | null;
 
   // 🧩 Thông tin thêm
   description?: string | null;

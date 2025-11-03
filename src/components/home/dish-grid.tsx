@@ -1,8 +1,10 @@
 // components/dishes/dish-grid.tsx
 import Link from "next/link";
 import { dishImageUrl } from "@/modules/dishes/lib/image-url";
-import VideoDialog from "@/app/(products)/posts/manager/VideoDialog";
+import VideoDialog from "@/components/common/VideoDialog";
 import { SmartVideo } from "@/components/common/SmartVideo";
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export type DishCard = {
   id?: string;
@@ -12,29 +14,8 @@ export type DishCard = {
   diet?: string | null;
   time_minutes?: number | null;
   servings?: number | null;
-  review_status?: string | null;
+  review_status?: ReviewStatus | null;
   video_url?: string | null;
-  cover_image_url?: string | null;
-  images?: string[] | string | null;
-};
-
-type DishGridProps = {
-  dishes: Array<{
-    id?: string;
-    slug: string;
-    title: string;
-    category_name?: string;
-    diet?: string | null;
-    time_minutes?: number | null;
-    servings?: number | null;
-    review_status?: string;
-    video_url?: string | null;
-    cover_image_url?: string | null;
-  }>;
-  className?: string;
-};
-
-type DishImageLike = {
   cover_image_url?: string | null;
   images?: string[] | string | null;
 };
@@ -47,7 +28,6 @@ function getCoverUrl(d: DishCard) {
   const raw = d.cover_image_url ?? firstImage(d.images) ?? null;
   return dishImageUrl(raw) ?? "/placeholder.png";
 }
-
 
 function hashStr(s: string) {
   let h = 0;
@@ -128,9 +108,10 @@ export default function DishGrid({
   itemClassName?: string;
   hrefBuilder?: (d: DishCard) => string;
 }) {
-  const visible = (dishes ?? []).filter(
-    (d) => !d.review_status || d.review_status === "approved"
-  );
+  const visible = (dishes ?? []).filter((d) => {
+    const status = (d.review_status ?? "").toString().trim().toLowerCase();
+    return status === "approved";
+  });
 
   return (
     <ul className={className} role="list">
@@ -158,7 +139,7 @@ export default function DishGrid({
                     <>
                       <SmartVideo
                         url={d.video_url}
-                        poster={ getCoverUrl(d) }
+                        poster={getCoverUrl(d)}
                         className="absolute inset-0 h-full w-full object-cover"
                         autoPlay={false}
                         muted
@@ -169,7 +150,7 @@ export default function DishGrid({
                       <div className="absolute inset-0 z-10 grid place-items-center">
                         <VideoDialog
                           url={d.video_url}
-                          poster={ d.cover_image_url ?? getCoverUrl(d)}
+                          poster={d.cover_image_url ?? getCoverUrl(d)}
                           trigger="overlay"
                         />
                       </div>
@@ -177,7 +158,7 @@ export default function DishGrid({
                   ) : (
                     // fallback: chỉ có ảnh
                     <img
-                      src={ d.cover_image_url ?? getCoverUrl(d) }
+                      src={d.cover_image_url ?? getCoverUrl(d)}
                       alt={d.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
@@ -205,7 +186,7 @@ export default function DishGrid({
                     <div className="absolute left-2 bottom-2 z-20">
                       <VideoDialog
                         url={d.video_url}
-                        poster={ d.cover_image_url ?? getCoverUrl(d) }
+                        poster={d.cover_image_url ?? getCoverUrl(d)}
                         trigger="badge"
                       />
                     </div>

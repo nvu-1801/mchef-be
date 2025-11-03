@@ -40,14 +40,12 @@ export default async function VegDishesSection({
 
   const itemsTyped = items as unknown as DishItem[];
 
-  // Lọc món chay
-  // Lọc món chay
   const veg = itemsTyped.filter((d) => {
     const v = String(d?.diet ?? "").toLowerCase();
     const status = String(d?.review_status ?? "").toLowerCase();
     return (
       (v === "veg" || v === "vegetarian" || v === "vegan") &&
-      status === "approved" // ✅ chỉ hiển thị món đã duyệt
+      status === "approved"
     );
   });
 
@@ -69,7 +67,7 @@ export default async function VegDishesSection({
     review_status: (d as any).review_status ?? null,
     video_url: (d as any).video_url ?? null,
     cover_image_url: (d as any).cover_image_url ?? null,
-    images: (d as any).images ?? null, // nếu có
+    images: (d as any).images ?? null,
   }));
 
   const buildHref = (p: number) => {

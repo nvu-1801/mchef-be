@@ -165,6 +165,8 @@ export default function HomePage() {
   );
 }
 
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
 function Section({
   id,
   icon,
@@ -188,7 +190,7 @@ function Section({
     diet?: string | null;
     time_minutes?: number | null;
     servings?: number | null;
-    review_status?: string;
+    review_status?: ReviewStatus | null;
     video_url?: string | null;
     cover_image_url?: string | null;
   }>;

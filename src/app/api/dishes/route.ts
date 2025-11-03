@@ -9,8 +9,16 @@ import { createClient } from "@supabase/supabase-js";
  * ===================== */
 const CreateDish = z.object({
   title: z.string().min(1).max(160),
-  slug: z.string().min(1).max(160).regex(/^[a-z0-9-]+$/),
-  cover_image_url: z.string().url().optional().or(z.literal("").transform(() => undefined)),
+  slug: z
+    .string()
+    .min(1)
+    .max(160)
+    .regex(/^[a-z0-9-]+$/),
+  cover_image_url: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   category_id: z.string().uuid(),
   diet: z.string().min(1).max(30).optional(), // "veg" | "nonveg"
   time_minutes: z.number().int().min(0).max(100000).optional(),
@@ -45,32 +53,21 @@ export async function GET(request: Request) {
     .from("dishes")
     .select(
       `
-      id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
-      created_by, published, created_at, updated_at,
-      category:category_id ( id, slug, name, icon ),
-      dish_rating_stats ( rating_avg, rating_count ),
-      dish_images ( id, image_url, alt, sort ),
-      recipe_steps ( step_no, content, image_url ),
-      dish_ingredients ( amount, note, ingredient:ingredient_id ( id, name, unit ) ),
-      ratings ( user_id, stars, comment, created_at ),
-      favorites ( user_id ),
-      creator:created_by ( id, display_name, avatar_url )
     id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
-    video_url,
+    video_url, review_status,
     created_by, published, created_at, updated_at,
     category:category_id ( id, slug, name, icon ),
+    dish_rating_stats ( rating_avg, rating_count ),
     dish_images ( id, image_url, alt, sort ),
     recipe_steps ( step_no, content, image_url ),
-    dish_ingredients (
-      amount, note,
-      ingredient:ingredient_id ( id, name, unit )
-    ),
+    dish_ingredients ( amount, note, ingredient:ingredient_id ( id, name, unit ) ),
     ratings ( user_id, stars, comment, created_at ),
     favorites ( user_id ),
     creator:created_by ( id, display_name, avatar_url )
     `,
       { count: "exact" }
     )
+    .eq("review_status", "approved") // chỉ lấy approved
     .eq("published", true);
 
   // ====== LỌC ======
@@ -82,11 +79,20 @@ export async function GET(request: Request) {
   if (highlight) {
     // Món nổi bật = nhiều lượt rating và điểm cao
     query = query
-      .order("rating_count", { foreignTable: "dish_rating_stats", ascending: false })
-      .order("rating_avg", { foreignTable: "dish_rating_stats", ascending: false })
+      .order("rating_count", {
+        foreignTable: "dish_rating_stats",
+        ascending: false,
+      })
+      .order("rating_avg", {
+        foreignTable: "dish_rating_stats",
+        ascending: false,
+      })
       .range(0, 4); // chỉ lấy top 5 món nổi bật
   } else if (sortBy === "rating") {
-    query = query.order("rating_avg", { foreignTable: "dish_rating_stats", ascending: false });
+    query = query.order("rating_avg", {
+      foreignTable: "dish_rating_stats",
+      ascending: false,
+    });
   } else if (sortBy === "created_at") {
     query = query.order("created_at", { ascending: false });
   } else if (sortBy === "servings") {
@@ -109,20 +115,20 @@ export async function GET(request: Request) {
   // ====== SAU KHI LẤY VỀ ======
 
   // Helper: lấy rating trung bình an toàn
-    function getRatingAvg(d: any) {
-      return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
-    }
-  
-    // Tách món chay / mặn, sắp xếp giảm dần theo rating
-    const items = (data ?? []) as any[];
-  
-    const veg = items
-      .filter((d: any) => d.diet === "veg")
-      .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
-  
-    const nonveg = items
-      .filter((d: any) => d.diet === "nonveg")
-      .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
+  function getRatingAvg(d: any) {
+    return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
+  }
+
+  // Tách món chay / mặn, sắp xếp giảm dần theo rating
+  const items = (data ?? []) as any[];
+
+  const veg = items
+    .filter((d: any) => d.diet === "veg")
+    .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
+
+  const nonveg = items
+    .filter((d: any) => d.diet === "nonveg")
+    .sort((a: any, b: any) => getRatingAvg(b) - getRatingAvg(a));
 
   // Gộp lại (món chay trước, món mặn sau)
   const combined = [...veg, ...nonveg];
@@ -186,11 +192,13 @@ export async function POST(req: Request) {
       video_url: payload.video_url ?? null,
       published: payload.published ?? false,
       created_by: user.id,
+      review_status: "pending",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .select(
-      "id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips, created_by, published, created_at, updated_at, video_url"
+      `id, category_id, title, slug, cover_image_url, diet, time_minutes, servings,
+     tips, created_by, published, created_at, updated_at, video_url, review_status`
     )
     .single();
 

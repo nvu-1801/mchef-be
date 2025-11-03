@@ -30,10 +30,15 @@ export async function listDishesClient({
 
   let query = sb
     .from("dishes")
-    .select("id,title,slug,cover_image_url,diet,time_minutes,servings", {
-      count: "exact",
-    })
-    .eq("published", true);
+    .select(
+      `
+      id, title, slug, cover_image_url, diet,
+      review_status, time_minutes, servings, video_url
+      `,
+      { count: "exact" }
+    )
+    .eq("published", true)
+    .eq("review_status", "approved");
 
   if (q) query = query.ilike("title", `%${q}%`);
   if (cat !== "all") query = query.eq("category_id", cat);

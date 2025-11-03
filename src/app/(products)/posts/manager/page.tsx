@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createDish as _createDish, deleteDish } from "./actions";
 import AddDishButton from "./AddDishButton";
-import VideoDialog from "./VideoDialog";
+import VideoDialog from "../../../../components/common/VideoDialog";
 
 export const dynamic = "force-dynamic";
 

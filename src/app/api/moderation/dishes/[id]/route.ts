@@ -3,13 +3,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
+export const runtime = "nodejs"; // dùng node runtime vì supabaseServer() cần Node APIs
+
 const Body = z.object({
   action: z.enum(["approve", "reject"]),
-  reason: z.string().max(2000).optional(), // lý do reject
+  reason: z.string().max(2000).optional(),
 });
 
-export async function PATCH(req: Request, { params }: { params: { id: string }}) {
-  const id = params.id;
+// 👇 Khai báo kiểu params là Promise để khớp checker của Next 15
+type Params = Promise<{ id: string }>;
+
+export async function PATCH(req: Request, ctx: { params: Params }) {
+  const { id } = await ctx.params; // ✅ BẮT BUỘC await
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const sb = await supabaseServer();
@@ -18,13 +23,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string }})
   const { data: sessionRes } = await sb.auth.getUser();
   const uid = sessionRes.user?.id;
   if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { data: prof } = await sb.from("profiles").select("role").eq("id", uid).single();
-  if (prof?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { data: prof } = await sb
+    .from("profiles")
+    .select("role")
+    .eq("id", uid)
+    .single();
+
+  if (prof?.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body", issues: parsed.error.format() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid body", issues: parsed.error.format() },
+      { status: 400 }
+    );
   }
 
   const { action, reason } = parsed.data;
@@ -41,7 +57,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string }})
     .select("id, title, review_status, published, review_note, updated_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ item: data });
 }

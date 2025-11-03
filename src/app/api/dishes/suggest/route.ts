@@ -14,7 +14,9 @@ export async function GET(req: Request) {
       title,
       slug,
       cover_image_url,
-      category:category_id ( name )
+      category:category_id (
+        name
+      )
     `)
     .ilike("title", `%${q}%`)
     .eq("published", true)
@@ -26,11 +28,11 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json(
-    data.map((d) => ({
+    data.map((d: any) => ({
       title: d.title,
       slug: d.slug,
       image: d.cover_image_url,
-      category: d.category?.name ?? "",
+      category: Array.isArray(d.category) ? d.category[0]?.name ?? "" : d.category?.name ?? "",
     }))
   );
 }

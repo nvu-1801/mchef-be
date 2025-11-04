@@ -33,7 +33,8 @@ export async function listDishesClient({
     .select(
       `
       id, title, slug, cover_image_url, diet,
-      review_status, time_minutes, servings, video_url
+      review_status, time_minutes, servings, video_url,
+      category:categories ( id, slug, name, icon )
       `,
       { count: "exact" }
     )
@@ -51,13 +52,36 @@ export async function listDishesClient({
   const { data, count, error } = await query.range(from, to);
   if (error) throw new Error(error.message);
 
+  const items = (data ?? []).map((d: any) => {
+    const category =
+      Array.isArray(d.category) && d.category.length > 0
+        ? d.category[0]
+        : d.category ?? { id: "", slug: "", name: "", icon: null };
+    return {
+      ...d,
+      category,
+    };
+  }) as Dish[];
+
   return {
-    items: (data ?? []) as Dish[],
+    items,
     total: count ?? 0,
     page,
     pageSize,
   };
 }
+
+/** 📚 Lấy danh sách categories để render filter */
+export async function listCategoriesClient() {
+  const { data, error } = await sb
+    .from("categories")
+    .select("id, slug, name, icon")
+    .order("name", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 
 /** 🖼️ Trả về URL ảnh (client-safe) */
 export function dishImageUrlClient(d: Pick<Dish, "cover_image_url">) {

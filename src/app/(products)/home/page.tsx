@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listDishesClient as listDishes } from "@/modules/dishes/service/dish.client";
+import { listDishesClient as listDishes, listCategoriesClient  } from "@/modules/dishes/service/dish.client";
 import Carousel from "@/components/common/Carousel";
 import SearchBar from "@/components/common/SearchBar";
 import SideToc from "@/components/common/side-toc";
@@ -28,6 +28,9 @@ export default function HomePage() {
   const [pageVeg, setPageVeg] = useState(1);
   const [pageNonVeg, setPageNonVeg] = useState(1);
 
+  const [categories, setCategories] = useState<Array<{id:string;slug:string;name:string;icon:string|null}>>([]);
+  const [selectedCatId, setSelectedCatId] = useState<string | "all">("all");
+
   const [loading, setLoading] = useState(true);
 
   const tocItems = [
@@ -37,13 +40,22 @@ export default function HomePage() {
     { id: "section-veg", label: "Món chay" },
   ];
 
+    useEffect(() => {
+    async function init() {
+      const cats = await listCategoriesClient();
+      setCategories(cats);
+    }
+    init();
+  }, []);
+  
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
         const [featuredRes, allRes, vegRes, nonVegRes] = await Promise.all([
           listDishes({ sortBy: "created_at", pageSize: 10 }),
-          listDishes({ page: pageAll, pageSize: PAGE_SIZE }),
+          listDishes({ page: pageAll, pageSize: PAGE_SIZE, cat: selectedCatId }),
+          // listDishes({ page: pageAll, pageSize: PAGE_SIZE }),
           listDishes({ page: pageVeg, pageSize: PAGE_SIZE, diet: "veg" }),
           listDishes({ page: pageNonVeg, pageSize: PAGE_SIZE, diet: "nonveg" }),
         ]);
@@ -61,7 +73,7 @@ export default function HomePage() {
     }
 
     fetchData();
-  }, [pageAll, pageVeg, pageNonVeg]);
+  }, [pageAll, pageVeg, pageNonVeg,  selectedCatId]);
 
   const totalPagesAll = Math.ceil(totalAll / PAGE_SIZE);
   const totalPagesVeg = Math.ceil(totalVeg / PAGE_SIZE);
@@ -94,6 +106,35 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* 🔖 Thanh filter category cho “Tất cả món ăn” */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => { setSelectedCatId("all"); setPageAll(1); }}
+                className={`px-3 py-1.5 rounded-full border text-sm ${
+                  selectedCatId === "all"
+                    ? "bg-purple-600 text-white border-purple-600"
+                    : "bg-white text-gray-700 border-gray-300 hover:border-purple-300"
+                }`}
+              >
+                Tất cả
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setSelectedCatId(c.id); setPageAll(1); }}
+                  className={`px-3 py-1.5 rounded-full border text-sm flex items-center gap-1.5 ${
+                    selectedCatId === c.id
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-purple-300"
+                  }`}
+                  title={c.slug}
+                >
+                  <span className="text-base">{c.icon ?? "🍽️"}</span>
+                  <span>{c.name}</span>
+                </button>
+              ))}
+            </div>
 
         {/* Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">

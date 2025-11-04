@@ -1,6 +1,4 @@
 import { ReactNode } from "react";
-import { redirect } from "next/navigation";
-import { supabaseServer } from "@/libs/supabase/supabase-server";
 
 // Ngăn prerender & cache để luôn đọc session mới nhất
 export const dynamic = "force-dynamic";
@@ -11,14 +9,14 @@ export default async function ProtectedLayout({
 }: {
   children: ReactNode;
 }) {
-  const supabase = await supabaseServer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // const supabase = await supabaseServer();
+  // const {
+  //   data: { session },
+  // } = await supabase.auth.getSession();
 
-  if (!session) {
-    redirect("/auth/signin");
-  }
+  // if (!session) {
+  //   redirect("/auth/signin");
+  // }
 
   // (tuỳ chọn) có thể fetch user profile ở đây rồi wrap vào context/provider
 

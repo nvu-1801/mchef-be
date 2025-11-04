@@ -54,7 +54,7 @@ export default function DishDetailClient({
   ratingCount,
 }: Props) {
   const router = useRouter();
-  const { requireAuth, user } = useProtectedAction();
+  const { requireAuth, user, role } = useProtectedAction();
   const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
     "ingredients"
   );
@@ -564,7 +564,7 @@ export default function DishDetailClient({
               <Comments
                 dishId={dish.id}
                 currentUserId={user?.id ?? null}
-                isAdmin={false}
+                isAdmin={role === "admin"}
                 onRequireLogin={handleRequestLogin}
               />
 

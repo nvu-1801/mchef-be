@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useProtectedAction } from "@/libs/auth/protected";
 
 type ChefApi = {
   id: string;
@@ -27,10 +28,29 @@ type ChefApi = {
   }>;
 };
 
-export default function AuthorCard({ chefId }: { chefId: string }) {
+type Props = {
+  chefId: string;
+  /** Hiện nút Follow (mặc định: true) */
+  showFollow?: boolean;
+  /** Gọi khi cần người dùng đăng nhập (ví dụ: push /auth/signin?next=...) */
+  onRequireLogin?: () => void;
+  className?: string;
+};
+
+export default function AuthorCard({
+  chefId,
+  showFollow = true,
+  onRequireLogin,
+  className = "",
+}: Props) {
   const [chef, setChef] = useState<ChefApi | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+
+  const [following, setFollowing] = useState(false);
+  const [followErr, setFollowErr] = useState<string | null>(null);
+
+  const { requireAuth } = useProtectedAction();
 
   useEffect(() => {
     const ac = new AbortController();
@@ -49,13 +69,44 @@ export default function AuthorCard({ chefId }: { chefId: string }) {
         const data: ChefApi = await res.json();
         setChef(data);
       } catch (e: any) {
-        if (e.name !== "AbortError") setErr(e?.message || "Fetch error");
+        if (e?.name !== "AbortError") setErr(e?.message || "Fetch error");
       } finally {
         setLoading(false);
       }
     })();
     return () => ac.abort();
   }, [chefId]);
+
+  async function doFollow() {
+    setFollowErr(null);
+    setFollowing(true);
+    try {
+      // TODO: tuỳ backend của bạn, có thể là POST /api/chefs/[id]/follow
+      const res = await fetch(`/api/chefs/${chefId}/follow`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || `Follow failed (${res.status})`);
+      }
+      // Nếu muốn: cập nhật lại chef (đếm follower/flag)
+      // await refetch chef
+    } catch (e: any) {
+      setFollowErr(e?.message || "Không thể theo dõi");
+    } finally {
+      setFollowing(false);
+    }
+  }
+
+  const handleFollow = () =>
+    requireAuth(
+      () => {
+        // đã đăng nhập → thực hiện follow
+        void doFollow();
+      },
+      // chưa đăng nhập → gọi callback từ parent
+      onRequireLogin
+    );
 
   if (loading) {
     return (
@@ -81,7 +132,12 @@ export default function AuthorCard({ chefId }: { chefId: string }) {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30 p-5 shadow-sm">
+    <div
+      className={
+        "relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30 p-5 shadow-sm " +
+        className
+      }
+    >
       <div className="flex items-center gap-4">
         <div className="relative h-16 w-16 rounded-2xl overflow-hidden border-2 border-orange-200 shadow-md flex-shrink-0">
           <Image
@@ -107,16 +163,23 @@ export default function AuthorCard({ chefId }: { chefId: string }) {
           </div>
         </div>
 
-        <button
-          className="rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200"
-          onClick={() => {
-            // TODO: gọi API follow nếu bạn đã có endpoint
-            alert("TODO: Follow");
-          }}
-        >
-          Follow
-        </button>
+        {showFollow && (
+          <button
+            className="rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200 disabled:opacity-60"
+            onClick={handleFollow}
+            disabled={following}
+            aria-disabled={following}
+          >
+            {following ? "Đang theo dõi..." : "Follow"}
+          </button>
+        )}
       </div>
+
+      {followErr && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {followErr}
+        </div>
+      )}
 
       {/* actions */}
       <div className="mt-4 grid grid-cols-2 gap-3">

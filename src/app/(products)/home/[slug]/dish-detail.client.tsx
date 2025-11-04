@@ -252,43 +252,13 @@ export default function DishDetailClient({
                 </div>
               </div>
             )}
-
-            {/* Author Card */}
-            {dish.creator && (
-              <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30 p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="relative h-16 w-16 rounded-2xl overflow-hidden border-2 border-orange-200 shadow-md flex-shrink-0">
-                    <Image
-                      src={dish.creator.avatar_url ?? "/default-avatar.png"}
-                      alt={dish.creator.display_name ?? "Chef"}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-gray-500 mb-1">
-                      Đầu bếp
-                    </div>
-                    <div className="font-bold text-gray-900 text-lg truncate">
-                      {dish.creator.display_name ?? "Anonymous"}
-                    </div>
-                  </div>
-
-                  {/* Follow chef */}
-                  {dish.creator?.id && (
-                    <button
-                      onClick={handleFollow}
-                      className="w-40 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-bold text-white shadow-lg"
-                    >
-                      Follow đầu bếp
-                    </button>
-                  )}
-                </div>
-              </div>
+            {dish.creator?.id && (
+              <AuthorCard
+                chefId={dish.creator.id}
+                onRequireLogin={handleRequestLogin}
+              />
             )}
-            {/* {dish.creator?.id && <AuthorCard chefId={dish.creator.id} />} */}
+
             {/* Video Section */}
             {videoUrl && (
               <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 shadow-sm">

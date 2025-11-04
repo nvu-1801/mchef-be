@@ -34,6 +34,12 @@ export type Dish = {
     name: string;
     icon: string | null;
   } | null;
+
+  premium?: {
+    active: boolean;
+    required_plan: string;
+    chef_id?: string;
+  } | null;
 };
 
 export type DishFull = Dish & {
@@ -42,6 +48,12 @@ export type DishFull = Dish & {
     slug: string;
     name: string;
     icon: string | null;
+  } | null;
+
+  premium?: {
+    active: boolean;
+    required_plan: string;
+    chef_id?: string;
   } | null;
 
   dish_images?: {

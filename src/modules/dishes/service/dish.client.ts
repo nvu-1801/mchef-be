@@ -34,7 +34,8 @@ export async function listDishesClient({
       `
       id, title, slug, cover_image_url, diet,
       review_status, time_minutes, servings, video_url,
-      category:categories ( id, slug, name, icon )
+      category:categories ( id, slug, name, icon ),
+      premium:premium_dishes ( active, required_plan, chef_id )
       `,
       { count: "exact" }
     )

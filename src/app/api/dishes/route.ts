@@ -63,7 +63,8 @@ export async function GET(request: Request) {
     dish_ingredients ( amount, note, ingredient:ingredient_id ( id, name, unit ) ),
     ratings ( user_id, stars, comment, created_at ),
     favorites ( user_id ),
-    creator:created_by ( id, display_name, avatar_url )
+    creator:created_by ( id, display_name, avatar_url ),
+    premium:premium_dishes ( active, required_plan )
     `,
       { count: "exact" }
     )

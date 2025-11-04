@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
+import { useProtectedAction } from "@/libs/auth/protected";
 import { SmartVideo } from "@/components/common/SmartVideo";
 import AuthorCard from "@/components/dish/AuthorCard";
 import Comments from "@/components/dish/Comments";
@@ -53,9 +54,31 @@ export default function DishDetailClient({
   ratingCount,
 }: Props) {
   const router = useRouter();
+  const { requireAuth, user } = useProtectedAction();
   const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
     "ingredients"
   );
+
+  const handleRate = () =>
+    requireAuth(() => {
+      // mở modal đánh giá hoặc điều hướng
+      router.push(`/dishes/${dish.slug}/rate`);
+    });
+
+  const handleFollow = () =>
+    requireAuth(() => {
+      // TODO: gọi API follow chef: dish.creator?.id
+      // await followChef(dish.creator!.id)
+      // toast.success("Đã theo dõi đầu bếp");
+      // demo: console.log
+      console.log("follow chef", dish.creator?.id);
+    });
+
+  const handleRequestLogin = () => {
+    // cho Comments gọi khi user bấm gửi nhưng chưa login
+    const next = encodeURIComponent(`/dishes/${dish.slug}`);
+    router.push(`/auth/signin?next=${next}`);
+  };
 
   const videoUrl =
     dish.video_url ||
@@ -253,9 +276,15 @@ export default function DishDetailClient({
                     </div>
                   </div>
 
-                  <button className="rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200">
-                    Follow
-                  </button>
+                  {/* Follow chef */}
+                  {dish.creator?.id && (
+                    <button
+                      onClick={handleFollow}
+                      className="w-40 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-3 text-sm font-bold text-white shadow-lg"
+                    >
+                      Follow đầu bếp
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -553,7 +582,10 @@ export default function DishDetailClient({
                     </div>
                   </div>
 
-                  <button className="w-full rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:scale-[1.02] transition-all duration-200">
+                  <button
+                    onClick={handleRate}
+                    className="w-full rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl hover:scale-[1.02] transition-all"
+                  >
                     ⭐ Đánh giá món này
                   </button>
                 </div>
@@ -561,8 +593,9 @@ export default function DishDetailClient({
 
               <Comments
                 dishId={dish.id}
-                currentUserId={dish.creator?.id ?? null}
+                currentUserId={user?.id ?? null}
                 isAdmin={false}
+                onRequireLogin={handleRequestLogin}
               />
 
               {/* Share Card */}

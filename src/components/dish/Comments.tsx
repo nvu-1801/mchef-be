@@ -27,12 +27,17 @@ type FetchRes = {
 
 type Props = {
   dishId: string;
-  // Nếu bạn đã có thông tin user hiện tại, có thể truyền vào để ẩn/hiện nút xoá ngay trên client
   currentUserId?: string | null;
-  isAdmin?: boolean; // tuỳ chọn
+  isAdmin?: boolean;
+  onRequireLogin?: () => void;
 };
 
-export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
+export default function Comments({
+  dishId,
+  currentUserId,
+  isAdmin,
+  onRequireLogin,
+}: Props) {
   const [items, setItems] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -46,6 +51,7 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
 
   const canPost = useMemo(() => content.trim().length > 0, [content]);
 
+  // --- Load comments (cursor-based) ---
   const fetchComments = async (reset = false) => {
     setLoading(true);
     setError(null);
@@ -80,7 +86,7 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
   };
 
   useEffect(() => {
-    // load lần đầu
+    // load lần đầu / khi đổi dish
     setItems([]);
     setCursor(null);
     setCursorId(null);
@@ -88,8 +94,15 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dishId]);
 
+  // --- Post comment (auth-gated + optimistic) ---
   const onPost = async () => {
+    if (!currentUserId) {
+      // chưa đăng nhập -> gọi callback để chuyển hướng
+      onRequireLogin?.();
+      return;
+    }
     if (!canPost || posting) return;
+
     setPosting(true);
     setError(null);
 
@@ -98,20 +111,18 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
       content: content.trim(),
     };
 
-    // Optimistic
+    // Optimistic UI
     const tmpId = `tmp-${Date.now()}`;
     const optimistic: CommentItem = {
       id: tmpId,
       content: payload.content,
       created_at: new Date().toISOString(),
-      user_id: currentUserId || "me",
-      user: currentUserId
-        ? {
-            id: currentUserId,
-            full_name: "Bạn",
-            avatar_url: null,
-          }
-        : null,
+      user_id: currentUserId,
+      user: {
+        id: currentUserId,
+        full_name: "Bạn",
+        avatar_url: null,
+      },
     };
     setItems((prev) => [optimistic, ...prev]);
     setContent("");
@@ -128,16 +139,16 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
         throw new Error(data?.error || "Post comment failed");
       }
 
-      // Thay optimistic bằng item thực
+      // thay optimistic bằng record thực
       setItems((prev) => {
         const idx = prev.findIndex((x) => x.id === tmpId);
         if (idx === -1) return prev;
         const cloned = [...prev];
-        cloned[idx] = data.item;
+        cloned[idx] = data.item as CommentItem;
         return cloned;
       });
     } catch (e: any) {
-      // Rollback optimistic
+      // rollback optimistic
       setItems((prev) => prev.filter((x) => x.id !== tmpId));
       setError(e.message || "Không thể gửi bình luận");
       setContent(payload.content); // trả lại nội dung
@@ -146,8 +157,8 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
     }
   };
 
+  // --- Delete comment (optimistic) ---
   const onDelete = async (id: string) => {
-    // Xoá optimistic
     const snapshot = items;
     setItems((prev) => prev.filter((x) => x.id !== id));
 
@@ -164,8 +175,9 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
   };
 
   const canDelete = (c: CommentItem) =>
-    !!currentUserId && (c.user_id === currentUserId || isAdmin);
+    !!currentUserId && (c.user_id === currentUserId || !!isAdmin);
 
+  // --- UI ---
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
       <h3 className="text-lg font-bold text-gray-900 mb-4">Bình luận</h3>
@@ -178,6 +190,7 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
           placeholder="Viết bình luận của bạn..."
           className="w-full rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
           rows={3}
+          maxLength={5000}
         />
         <div className="mt-2 flex items-center justify-between">
           <p className="text-xs text-gray-500">
@@ -202,7 +215,9 @@ export default function Comments({ dishId, currentUserId, isAdmin }: Props) {
       {/* Danh sách */}
       <div ref={listRef} className="space-y-4">
         {items.length === 0 && !loading && (
-          <p className="text-sm text-gray-500">Hãy là người bình luận đầu tiên!</p>
+          <p className="text-sm text-gray-500">
+            Hãy là người bình luận đầu tiên!
+          </p>
         )}
 
         {items.map((c) => (

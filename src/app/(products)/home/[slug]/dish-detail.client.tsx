@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
 import { SmartVideo } from "@/components/common/SmartVideo";
 import AuthorCard from "@/components/dish/AuthorCard";
+import Comments from "@/components/dish/Comments";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
 type Props = {
@@ -557,6 +558,12 @@ export default function DishDetailClient({
                   </button>
                 </div>
               </div>
+
+              <Comments
+                dishId={dish.id}
+                currentUserId={dish.creator?.id ?? null}
+                isAdmin={false}
+              />
 
               {/* Share Card */}
               <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-lg">

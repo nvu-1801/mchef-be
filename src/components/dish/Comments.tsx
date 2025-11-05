@@ -73,14 +73,21 @@ export default function Comments({
       const res = await fetch(`/api/comments?${params.toString()}`, { method: "GET" });
       const data: FetchRes = await res.json();
 
-      if (!res.ok) throw new Error((data as any)?.error || "Load comments failed");
+      if (!res.ok) {
+        throw new Error((data as { error?: string })?.error || "Load comments failed");
+      }
 
-      setItems((prev) => (reset ? data.items : [...prev, ...data.items]));
+      if (reset) {
+        setItems(data.items);
+      } else {
+        setItems((prev) => [...prev, ...data.items]);
+      }
+
       setHasMore(data.hasMore);
       setCursor(data.nextCursor);
       setCursorId(data.nextCursorId);
-    } catch (e: any) {
-      setError(e.message || "Something went wrong");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
       setFirstLoading(false);
@@ -139,10 +146,10 @@ export default function Comments({
         cloned[idx] = data.item as CommentItem;
         return cloned;
       });
-    } catch (e: any) {
-      // rollback optimistic
+    } catch (e: unknown) {
+      // Rollback optimistic
       setItems((prev) => prev.filter((x) => x.id !== tmpId));
-      setError(e.message || "Không thể gửi bình luận");
+      setError(e instanceof Error ? e.message : "Không thể gửi bình luận");
       setContent(payload.content); // trả lại nội dung
     } finally {
       setPosting(false);
@@ -162,8 +169,8 @@ export default function Comments({
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Delete failed");
       }
-    } catch (e: any) {
-      setError(e.message || "Không thể xoá");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Không thể xoá");
       setItems(snapshot); // rollback
     }
   };

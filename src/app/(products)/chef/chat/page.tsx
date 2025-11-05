@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/libs/supabase/supabase-client";
 import SupportUserList from "@/components/support/SupportUserList";
 import SupportChatPanel from "@/components/support/SupportChatPanel";
@@ -157,23 +157,23 @@ export default function ChefSupportPage() {
         { event: "INSERT", schema: "public", table: "support_messages" },
         (payload) => {
           const d = payload.new as unknown;
-          if (
-            typeof d === "object" &&
-            d !== null &&
-            "session_id" in d &&
-            typeof (d as any).session_id === "string"
-          ) {
-            upsertAndBumpTop({
-              session_id: (d as any).session_id,
-              user_id:
-                "user_id" in d && typeof (d as any).user_id === "string"
-                  ? (d as any).user_id
-                  : null,
-              created_at:
-                "created_at" in d && typeof (d as any).created_at === "string"
-                  ? (d as any).created_at
-                  : undefined,
-            });
+
+          if (typeof d === "object" && d !== null) {
+            const dd = d as Record<string, unknown>;
+
+            if ("session_id" in dd && typeof dd.session_id === "string") {
+              upsertAndBumpTop({
+                session_id: dd.session_id as string,
+                user_id:
+                  "user_id" in dd && typeof dd.user_id === "string"
+                    ? (dd.user_id as string)
+                    : null,
+                created_at:
+                  "created_at" in dd && typeof dd.created_at === "string"
+                    ? (dd.created_at as string)
+                    : undefined,
+              });
+            }
           }
         }
       )

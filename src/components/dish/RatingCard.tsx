@@ -9,6 +9,11 @@ type Props = {
   ratingCount: number;
 };
 
+type RatingItem = {
+  user_id: string;
+  stars: number;
+};
+
 export default function RatingCard({
   dishId,
   currentUserId,
@@ -29,8 +34,8 @@ export default function RatingCard({
         const res = await fetch(`/api/ratings?dishId=${dishId}`);
         if (!res.ok) return;
         const json = await res.json();
-        const items = Array.isArray(json?.items) ? json.items : [];
-        const mine = items.find((r: any) => r.user_id === currentUserId);
+        const items = Array.isArray(json?.items) ? json.items as RatingItem[] : [];
+        const mine = items.find((r: RatingItem) => r.user_id === currentUserId);
         setUserRating(mine?.stars ?? null);
       } catch (err) {
         console.error("Error loading user rating:", err);

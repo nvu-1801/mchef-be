@@ -8,6 +8,7 @@ import { useProtectedAction } from "@/libs/auth/protected";
 import { SmartVideo } from "@/components/common/SmartVideo";
 import AuthorCard from "@/components/dish/AuthorCard";
 import Comments from "@/components/dish/Comments";
+import WishlistButton from "@/components/common/WishlistButton";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
 type Props = {
@@ -120,23 +121,7 @@ export default function DishDetailClient({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                className="flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white hover:bg-rose-50 hover:border-rose-300 transition-all duration-200 shadow-sm hover:shadow-md group"
-                aria-label="Yêu thích"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-rose-500 transition-colors"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
-
+              <WishlistButton dishId={dish.id} />
               <button
                 className="flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
                 aria-label="Tùy chọn khác"

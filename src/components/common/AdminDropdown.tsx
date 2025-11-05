@@ -51,16 +51,16 @@ export default function AdminDropdown({ isAdmin }: { isAdmin: boolean }) {
         </svg>
       ),
     },
-    {
-      href: "/admin/chefs/applicants",
-      label: "Chefs Applicants",
-      icon: (
-        <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 12c2.8 0 5-2.2 5-5S14.8 2 12 2 7 4.2 7 7s2.2 5 5 5Z" />
-          <path d="M20 21a8 8 0 1 0-16 0" />
-        </svg>
-      ),
-    },
+    // {
+    //   href: "/admin/chefs/applicants",
+    //   label: "Chefs Applicants",
+    //   icon: (
+    //     <svg className="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    //       <path d="M12 12c2.8 0 5-2.2 5-5S14.8 2 12 2 7 4.2 7 7s2.2 5 5 5Z" />
+    //       <path d="M20 21a8 8 0 1 0-16 0" />
+    //     </svg>
+    //   ),
+    // },
     {
       href: "/admin/moderation/dishes",
       label: "Moderation Dishes",

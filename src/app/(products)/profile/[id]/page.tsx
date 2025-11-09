@@ -45,6 +45,36 @@ type Rating = {
   } | null;
 };
 
+type Certificate = {
+  id: string;
+  user_id: string;
+  title: string | null;
+  file_path: string;
+  mime_type: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string | null;
+};
+
+function normalizeObjectPath(input: string) {
+  try {
+    if (input.startsWith("http")) {
+      const u = new URL(input);
+      const idx = u.pathname.lastIndexOf("/certificates/");
+      if (idx >= 0) {
+        const after = u.pathname.slice(idx + "/certificates/".length);
+        return decodeURIComponent(after);
+      }
+    }
+  } catch {}
+  let p = decodeURIComponent(input).replace(/^\/+/, "");
+  if (p.startsWith("certificates/")) p = p.slice("certificates/".length);
+  return p;
+}
+
+function isImageUrl(url: string) {
+  return /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i.test(url);
+}
+
 export default async function ChefDetailPage({
   params,
 }: {
@@ -53,6 +83,7 @@ export default async function ChefDetailPage({
   const { id } = await params;
   const sb = await supabaseServer();
 
+  // Chef overview
   const { data: chef, error: e1 } = await sb
     .from("chef_overview")
     .select("*")
@@ -70,6 +101,7 @@ export default async function ChefDetailPage({
           chef.display_name ?? chef.user_id ?? "U"
         )}`;
 
+  // Dishes
   const { data: dishes } = (await sb
     .from("dishes")
     .select(
@@ -80,6 +112,7 @@ export default async function ChefDetailPage({
     .order("created_at", { ascending: false })
     .limit(8)) as { data: Dish[] | null };
 
+  // Ratings
   const { data: ratings } = (await sb
     .from("chef_ratings")
     .select(
@@ -88,6 +121,40 @@ export default async function ChefDetailPage({
     .eq("chef_id", chef.id)
     .order("created_at", { ascending: false })
     .limit(10)) as { data: Rating[] | null };
+
+  // Certificates (lấy từ DB, ký URL nếu cần)
+  const { data: certsRaw, error: certErr } = await sb
+    .from("certificates")
+    .select("id,user_id,title,file_path,mime_type,status,created_at")
+    .eq("user_id", chef.user_id)
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  if (certErr) {
+    // Không chặn trang; chỉ đơn giản ẩn section nếu lỗi
+    // (có thể log ra monitoring nếu bạn muốn)
+  }
+
+  let certs:
+    | (Certificate & { viewUrl: string | null })[]
+    | null = null;
+
+  if (certsRaw && certsRaw.length > 0) {
+    certs = await Promise.all(
+      (certsRaw as Certificate[]).map(async (c) => {
+        // nếu là link ngoài hoặc đã là absolute URL → trả nguyên
+        if (c.mime_type === "link/url" || /^https?:\/\//i.test(c.file_path)) {
+          return { ...c, viewUrl: c.file_path };
+        }
+        // còn lại: ký từ bucket "certificates"
+        const objectPath = normalizeObjectPath(c.file_path);
+        const { data: signed } = await sb.storage
+          .from("certificates")
+          .createSignedUrl(objectPath, 60 * 10);
+        return { ...c, viewUrl: signed?.signedUrl ?? null };
+      })
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -139,7 +206,7 @@ export default async function ChefDetailPage({
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* Hero card with gradient */}
+        {/* Hero card */}
         <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-white via-sky-50/30 to-violet-50/30 p-8 shadow-xl">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-br from-sky-200/40 to-violet-200/40 blur-3xl" />
           <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-gradient-to-br from-pink-200/40 to-amber-200/40 blur-3xl" />
@@ -162,24 +229,14 @@ export default async function ChefDetailPage({
 
                 {chef.is_active && chef.verified_at ? (
                   <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-emerald-500/30">
-                    <svg
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Verified
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-amber-500/30">
-                    <svg
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Pending
@@ -188,11 +245,7 @@ export default async function ChefDetailPage({
 
                 {chef.can_post && (
                   <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-blue-500/30">
-                    <svg
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Can post
@@ -209,9 +262,7 @@ export default async function ChefDetailPage({
                   {
                     icon: "⭐",
                     label: "Rating",
-                    value: `${chef.rating_avg?.toFixed(1) ?? "—"} (${
-                      chef.rating_count ?? 0
-                    })`,
+                    value: `${chef.rating_avg?.toFixed(1) ?? "—"} (${chef.rating_count ?? 0})`,
                     gradient: "from-amber-400 to-orange-500",
                   },
                   {
@@ -229,16 +280,12 @@ export default async function ChefDetailPage({
                   {
                     icon: "📅",
                     label: "Member since",
-                    value: chef.created_at
-                      ? new Date(chef.created_at).toLocaleDateString()
-                      : "—",
+                    value: chef.created_at ? new Date(chef.created_at).toLocaleDateString() : "—",
                     gradient: "from-violet-400 to-purple-500",
                   },
                 ].map((stat, i) => (
                   <div key={i} className="relative group">
-                    <div
-                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition blur-xl`}
-                    />
+                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-10 transition blur-xl`} />
                     <div className="relative rounded-2xl bg-white/60 backdrop-blur-sm border p-4 hover:shadow-lg transition">
                       <div className="text-2xl mb-2">{stat.icon}</div>
                       <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -266,9 +313,7 @@ export default async function ChefDetailPage({
                     🥘
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900">
-                      Recent Dishes
-                    </h2>
+                    <h2 className="text-lg font-bold text-gray-900">Recent Dishes</h2>
                     <p className="text-xs text-gray-500">Published recipes</p>
                   </div>
                 </div>
@@ -277,13 +322,7 @@ export default async function ChefDetailPage({
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
                 >
                   View all
-                  <svg
-                    className="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 5l7 7-7 7" />
                   </svg>
                 </a>
@@ -292,9 +331,7 @@ export default async function ChefDetailPage({
               {!dishes || dishes.length === 0 ? (
                 <div className="rounded-2xl bg-gray-50 p-8 text-center">
                   <div className="text-4xl mb-3">🍳</div>
-                  <p className="text-sm text-gray-600">
-                    This chef hasn&rsquo;t published any dishes yet.
-                  </p>
+                  <p className="text-sm text-gray-600">This chef hasn’t published any dishes yet.</p>
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -312,9 +349,7 @@ export default async function ChefDetailPage({
                   ⭐
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
-                    Recent Ratings
-                  </h2>
+                  <h2 className="text-lg font-bold text-gray-900">Recent Ratings</h2>
                   <p className="text-xs text-gray-500">Customer feedback</p>
                 </div>
               </div>
@@ -332,60 +367,106 @@ export default async function ChefDetailPage({
                 </ul>
               )}
             </section>
+
+            {/* Certificates */}
+            <section className="rounded-3xl border bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white">
+                  🎓
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Certificates</h2>
+                  <p className="text-xs text-gray-500">Chef’s uploaded certificates</p>
+                </div>
+              </div>
+
+              {!certs || certs.length === 0 ? (
+                <div className="rounded-2xl bg-gray-50 p-8 text-center">
+                  <div className="text-4xl mb-3">📄</div>
+                  <p className="text-sm text-gray-600">No certificates found.</p>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {certs.map((c) => {
+                    const url = c.viewUrl;
+                    if (!url) {
+                      return (
+                        <div key={c.id} className="w-32 h-24 rounded-md border bg-gray-50 flex items-center justify-center text-xs text-gray-500">
+                          No preview
+                        </div>
+                      );
+                    }
+                    if (isImageUrl(url)) {
+                      return (
+                        <a
+                          key={c.id}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group block overflow-hidden rounded-md border"
+                          title={c.title ?? url}
+                        >
+                          <img
+                            src={url}
+                            alt={c.title ?? "certificate"}
+                            className="h-24 w-32 object-cover transition group-hover:scale-[1.02]"
+                          />
+                        </a>
+                      );
+                    }
+                    return (
+                      <a
+                        key={c.id}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                        title={c.title ?? url}
+                      >
+                        <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <path d="M14 2v6h6"></path>
+                        </svg>
+                        <span className="truncate max-w-[9rem]">{c.title ?? "View"}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-
             {/* Info */}
             <div className="rounded-3xl border bg-white p-6 shadow-sm">
               <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
+                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Information
               </h3>
               <dl className="space-y-4 text-sm">
                 <div>
-                  <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    User ID
-                  </dt>
-                  <dd className="text-xs text-gray-700 break-all font-mono bg-gray-50 rounded-lg p-2">
-                    {chef.user_id}
-                  </dd>
+                  <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">User ID</dt>
+                  <dd className="text-xs text-gray-700 break-all font-mono bg-gray-50 rounded-lg p-2">{chef.user_id}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Created
-                  </dt>
+                  <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Created</dt>
                   <dd className="text-gray-900 font-medium">
-                    {chef.created_at
-                      ? new Date(chef.created_at).toLocaleString()
-                      : "—"}
+                    {chef.created_at ? new Date(chef.created_at).toLocaleString() : "—"}
                   </dd>
                 </div>
                 {chef.verified_at && (
                   <div>
-                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                      Verified at
-                    </dt>
-                    <dd className="text-gray-900 font-medium">
-                      {new Date(chef.verified_at).toLocaleString()}
-                    </dd>
+                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Verified at</dt>
+                    <dd className="text-gray-900 font-medium">{new Date(chef.verified_at).toLocaleString()}</dd>
                   </div>
                 )}
                 {chef.updated_at && (
                   <div>
-                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                      Last updated
-                    </dt>
-                    <dd className="text-gray-900 font-medium">
-                      {new Date(chef.updated_at).toLocaleString()}
-                    </dd>
+                    <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Last updated</dt>
+                    <dd className="text-gray-900 font-medium">{new Date(chef.updated_at).toLocaleString()}</dd>
                   </div>
                 )}
               </dl>

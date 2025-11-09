@@ -2,7 +2,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-type Ctx = { params: { id: string } };
+// 🔧 params giờ là Promise
+type Ctx = { params: Promise<{ id: string }> };
 
 async function getCurrentUser(sb: Awaited<ReturnType<typeof supabaseServer>>) {
   const { data, error } = await sb.auth.getUser();
@@ -11,8 +12,8 @@ async function getCurrentUser(sb: Awaited<ReturnType<typeof supabaseServer>>) {
 }
 
 // GET: trạng thái premium + quyền xem
-export async function GET(_req: Request, { params }: Ctx) {
-  const dishId = params.id;
+export async function GET(_req: Request, ctx: Ctx) {
+  const { id: dishId } = await ctx.params;               // 🔧 await
   const sb = await supabaseServer();
 
   const user = await getCurrentUser(sb);
@@ -33,7 +34,6 @@ export async function GET(_req: Request, { params }: Ctx) {
 
   const isPremium = !!prem;
   if (!isPremium) {
-    // Free
     return NextResponse.json({ isPremium: false, canView: true });
   }
 
@@ -65,7 +65,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       .select("id", { count: "exact" })
       .eq("user_id", userId)
       .eq("status", "PAID")
-      .eq("plan_id", "premium") // cố định
+      .eq("plan_id", "premium")
       .limit(1);
     if (!error) canView = (paid?.length ?? 0) > 0;
   }
@@ -94,9 +94,9 @@ async function assertChefOrAdmin(sb: Awaited<ReturnType<typeof supabaseServer>>,
   return { ok: true, uid };
 }
 
-// POST: bật premium (mặc định required_plan = 'premium')
-export async function POST(req: Request, { params }: Ctx) {
-  const dishId = params.id;
+// POST: bật premium
+export async function POST(req: Request, ctx: Ctx) {
+  const { id: dishId } = await ctx.params;               // 🔧 await
   const sb = await supabaseServer();
   const gate = await assertChefOrAdmin(sb, dishId);
   if (!gate.ok) return NextResponse.json({ error: gate.msg }, { status: gate.status });
@@ -111,7 +111,7 @@ export async function POST(req: Request, { params }: Ctx) {
     {
       dish_id: dishId,
       chef_id: chefId,
-      required_plan: "premium", // cố định
+      required_plan: "premium",
       active,
     },
     { onConflict: "dish_id" }
@@ -121,9 +121,9 @@ export async function POST(req: Request, { params }: Ctx) {
   return NextResponse.json({ ok: true });
 }
 
-// PATCH: chỉ cho phép bật/tắt (active)
-export async function PATCH(req: Request, { params }: Ctx) {
-  const dishId = params.id;
+// PATCH: bật/tắt active
+export async function PATCH(req: Request, ctx: Ctx) {
+  const { id: dishId } = await ctx.params;               // 🔧 await
   const sb = await supabaseServer();
   const gate = await assertChefOrAdmin(sb, dishId);
   if (!gate.ok) return NextResponse.json({ error: gate.msg }, { status: gate.status });
@@ -140,8 +140,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 // DELETE: gỡ premium -> Free
-export async function DELETE(_req: Request, { params }: Ctx) {
-  const dishId = params.id;
+export async function DELETE(_req: Request, ctx: Ctx) {
+  const { id: dishId } = await ctx.params;               // 🔧 await
   const sb = await supabaseServer();
   const gate = await assertChefOrAdmin(sb, dishId);
   if (!gate.ok) return NextResponse.json({ error: gate.msg }, { status: gate.status });

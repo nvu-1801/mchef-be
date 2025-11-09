@@ -84,11 +84,8 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-<<<<<<< HEAD
+
   let items = (data ?? []).map((row) => normalizeCommentRow(row as CommentRawRow));
-=======
-  let items = data || [];
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
   if (cursor && cursorId) {
     items = items.filter((row: { id: string; created_at: string }) => {

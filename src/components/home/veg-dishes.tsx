@@ -15,23 +15,8 @@ type Props = {
   q?: string;
 };
 
-<<<<<<< HEAD
-type DishItem = {
-  id: string;
-  slug: string;
-  title: string;
-  cover_image_url: string | null;
-  diet: string | null;
-  time_minutes: number | null;
-  servings: number | null;
-  created_at: string;
-  review_status: string;
-  video_url: string | null;
-};
-=======
 // Use the shared `Dish` type from the service to avoid unknown casts
 type DishItem = Dish & { [k: string]: unknown };
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
 // Type guard để kiểm tra object có phải DishItem không
 function isDishItem(item: unknown): item is DishItem {
@@ -56,14 +41,8 @@ export default async function VegDishesSection({
     pageSize: 48,
   });
 
-<<<<<<< HEAD
-  // Validate và filter items
-  const itemsTyped = items.filter(isDishItem);
-=======
   // `listDishes` returns `items: Dish[]` so we can treat them as DishItem
   const itemsTyped = items as DishItem[];
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
-
   const veg = itemsTyped.filter((d) => {
     const v = String(d.diet ?? "").toLowerCase();
     const status = String(d.review_status ?? "").toLowerCase();
@@ -80,23 +59,7 @@ export default async function VegDishesSection({
   const start = (clampedPage - 1) * pageSize;
   const show = veg.slice(start, start + pageSize);
 
-<<<<<<< HEAD
-  const dishes: DishCard[] = show.map((d) => {
-    return {
-      id: String(d.id),
-      slug: String(d.slug),
-      title: String(d.title),
-      category_name: undefined, // Not available in Dish type from listDishes
-      time_minutes: d.time_minutes,
-      servings: d.servings,
-      diet: d.diet,
-      review_status: d.review_status,
-      video_url: d.video_url,
-      cover_image_url: d.cover_image_url,
-      images: null, // Not available in Dish type from listDishes
-    };
-  });
-=======
+
   const dishes: DishCard[] = show.map((d) => ({
     id: String(d.id),
     slug: String(d.slug),
@@ -113,7 +76,7 @@ export default async function VegDishesSection({
     cover_image_url: d.cover_image_url ?? null,
 
   }));
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
+
 
   const buildHref = (p: number) => {
     const usp = new URLSearchParams();

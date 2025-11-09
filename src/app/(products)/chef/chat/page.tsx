@@ -162,15 +162,6 @@ export default function ChefSupportPage() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "support_messages" },
         (payload) => {
-<<<<<<< HEAD
-          const d = payload.new as PayloadRecord;
-          if (d && typeof d.session_id === "string") {
-            upsertAndBumpTop({
-              session_id: d.session_id,
-              user_id: typeof d.user_id === "string" ? d.user_id : null,
-              created_at: typeof d.created_at === "string" ? d.created_at : undefined,
-            });
-=======
           const d = payload.new as unknown;
 
           if (typeof d === "object" && d !== null) {
@@ -189,7 +180,6 @@ export default function ChefSupportPage() {
                     : undefined,
               });
             }
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
           }
         }
       )

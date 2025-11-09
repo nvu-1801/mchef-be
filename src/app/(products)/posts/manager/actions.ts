@@ -43,10 +43,6 @@ function makeUUID() {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
   }
-<<<<<<< HEAD
-  // fallback cuối cùng - tạo UUID đơn giản
-  return Math.random().toString(16).slice(2) + Date.now().toString(16);
-=======
   // fallback Node crypto nếu có (đỡ lệ thuộc build target)
   try {
     return randomUUID();
@@ -54,7 +50,6 @@ function makeUUID() {
     // fallback cuối
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
   }
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 }
 
 /** Upload ẢNH cover lên Storage và trả về public URL */

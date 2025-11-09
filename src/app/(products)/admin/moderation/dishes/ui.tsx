@@ -150,7 +150,6 @@ export default function ModerationDishesClient() {
       const res = await fetch(`/api/moderation/dishes?${params.toString()}`, {
         cache: "no-store",
       });
-<<<<<<< HEAD
       const data: ListRes | ErrorRes = await res.json();
       if (!res.ok) {
         const errorMsg = "error" in data ? data.error : "Load failed";
@@ -162,14 +161,6 @@ export default function ModerationDishesClient() {
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : "Error";
       setError(errorMsg);
-=======
-      const data: ListRes | { error: string } = await res.json();
-      if (!res.ok) throw new Error("error" in data ? data.error : "Load failed");
-      setItems((data as ListRes).items);
-      setTotal((data as ListRes).pagination.total);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
     } finally {
       setLoading(false);
     }
@@ -206,14 +197,9 @@ export default function ModerationDishesClient() {
       setItems((prev) =>
         prev.map((it) => (it.id === id ? { ...it, ...successData.item } : it))
       );
-<<<<<<< HEAD
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : "Không thể thực hiện";
       alert(errorMsg);
-=======
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Không thể thực hiện");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
     } finally {
       setActLoading(null);
     }

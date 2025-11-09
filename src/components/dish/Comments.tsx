@@ -70,21 +70,12 @@ export default function Comments({
       if (!reset && cursor) params.set("cursor", cursor);
       if (!reset && cursorId) params.set("cursorId", cursorId);
 
-<<<<<<< HEAD
-      const res = await fetch(`/api/comments?${params.toString()}`, {
-        method: "GET",
-      });
-      const data: FetchRes & { error?: string } = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Load comments failed");
-=======
       const res = await fetch(`/api/comments?${params.toString()}`, { method: "GET" });
       const data: FetchRes = await res.json();
 
       if (!res.ok) {
         throw new Error((data as { error?: string })?.error || "Load comments failed");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
       }
 
       if (reset) {
@@ -96,14 +87,8 @@ export default function Comments({
       setHasMore(data.hasMore);
       setCursor(data.nextCursor);
       setCursorId(data.nextCursorId);
-<<<<<<< HEAD
-    } catch (e) {
-      const error = e instanceof Error ? e : new Error("Something went wrong");
-      setError(error.message);
-=======
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
     } finally {
       setLoading(false);
       setFirstLoading(false);
@@ -162,18 +147,10 @@ export default function Comments({
         cloned[idx] = data.item as CommentItem;
         return cloned;
       });
-<<<<<<< HEAD
-    } catch (e) {
-      const error = e instanceof Error ? e : new Error("Không thể gửi bình luận");
-      // Rollback optimistic
-      setItems((prev) => prev.filter((x) => x.id !== tmpId));
-      setError(error.message);
-=======
     } catch (e: unknown) {
       // Rollback optimistic
       setItems((prev) => prev.filter((x) => x.id !== tmpId));
       setError(e instanceof Error ? e.message : "Không thể gửi bình luận");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
       setContent(payload.content); // trả lại nội dung
     } finally {
       setPosting(false);
@@ -193,14 +170,8 @@ export default function Comments({
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Delete failed");
       }
-<<<<<<< HEAD
-    } catch (e) {
-      const error = e instanceof Error ? e : new Error("Không thể xoá");
-      setError(error.message);
-=======
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Không thể xoá");
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
       setItems(snapshot); // rollback
     }
   };

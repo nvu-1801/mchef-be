@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 
-<<<<<<< HEAD
 type RatingUser = {
   id: string;
   display_name: string | null;
@@ -44,30 +43,22 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-=======
-// 🔧 Khai báo context có params dạng Promise
-type Ctx = { params: Promise<{ id: string }> };
-
-export async function PATCH(req: Request, ctx: Ctx) {
-  const { id } = await ctx.params; // 🔧 await
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const sb = await supabaseServer();
   const {
     data: { session },
   } = await sb.auth.getSession();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = (await req.json().catch(() => null)) as PatchRequestBody | null;
   const stars = body?.stars;
   const commentRaw = body?.comment;
 
-<<<<<<< HEAD
   const patch: RatingUpdateFields = {};
-=======
-  const patch: Record<string, unknown> = {};
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
   if (typeof stars !== "undefined") {
     if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
       return NextResponse.json(
@@ -81,6 +72,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     const comment = commentRaw?.trim() || null;
     patch.comment = comment;
   }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
@@ -89,7 +81,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     .from("ratings")
     .update(patch)
     .eq("id", id)
-    .eq("user_id", session.user.id)
+    .eq("user_id", session.user.id) // đảm bảo owner
     .select(
       `
       id, dish_id, user_id, stars, comment, created_at,
@@ -100,9 +92,10 @@ export async function PATCH(req: Request, ctx: Ctx) {
     )
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 403 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 403 });
+  }
 
-<<<<<<< HEAD
   const typedData = data as RatingRow;
   const userRow = Array.isArray(typedData.user)
     ? typedData.user[0] ?? null
@@ -132,41 +125,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-=======
-  const userRow = Array.isArray(data.user) ? data.user[0] ?? null : data.user ?? null;
-  return NextResponse.json({
-    item: {
-      id: data.id,
-      dish_id: data.dish_id,
-      user_id: data.user_id,
-      stars: data.stars,
-      comment: data.comment ?? null,
-      created_at: data.created_at,
-      user: userRow
-        ? { id: userRow.id, display_name: userRow.display_name, avatar_url: userRow.avatar_url }
-        : null,
-    },
-  });
-}
-
-export async function DELETE(_req: Request, ctx: Ctx) {
-  const { id } = await ctx.params; // 🔧 await
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
   const sb = await supabaseServer();
   const {
     data: { session },
   } = await sb.auth.getSession();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { error } = await sb
     .from("ratings")
     .delete()
     .eq("id", id)
-    .eq("user_id", session.user.id);
+    .eq("user_id", session.user.id); // đảm bảo owner
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 403 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 403 });
+  }
+
   return NextResponse.json({ ok: true });
 }
 

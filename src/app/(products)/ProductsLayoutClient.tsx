@@ -12,34 +12,17 @@ const GlobalLoading = dynamic(
   { ssr: false }
 );
 
-<<<<<<< HEAD
 type ProductsLayoutClientProps = {
   children: React.ReactNode;
   user: User | null;
   isAdmin: boolean;
-=======
-type User = {
-  id: string;
-  email?: string;
-  display_name?: string;
-  avatar_url?: string;
-  // Add other user properties as needed
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 };
 
 export default function ProductsLayoutClient({
   children,
   user,
   isAdmin,
-<<<<<<< HEAD
 }: ProductsLayoutClientProps) {
-=======
-}: {
-  children: React.ReactNode;
-  user: User | null;
-  isAdmin: boolean;
-}) {
->>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
   return (
     <div className="min-h-dvh flex flex-col bg-white bg-[radial-gradient(45rem_45rem_at_80%_-10%,#dbeafe_10%,transparent_60%),radial-gradient(40rem_40rem_at_0%_120%,#fce7f3_10%,transparent_60%)]">
       <GlobalLoading />

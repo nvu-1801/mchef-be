@@ -4,7 +4,11 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { DishFull } from "@/modules/dishes/dish-public";
+import { useProtectedAction } from "@/libs/auth/protected";
 import { SmartVideo } from "@/components/common/SmartVideo";
+import AuthorCard from "@/components/dish/AuthorCard";
+import Comments from "@/components/dish/Comments";
+import WishlistButton from "@/components/common/WishlistButton";
 
 // Khai báo lại các kiểu dữ liệu và hằng số
 type Props = {
@@ -51,9 +55,31 @@ export default function DishDetailClient({
   ratingCount,
 }: Props) {
   const router = useRouter();
+  const { requireAuth, user, role } = useProtectedAction();
   const [activeTab, setActiveTab] = useState<"ingredients" | "steps">(
     "ingredients"
   );
+
+  const handleRate = () =>
+    requireAuth(() => {
+      // mở modal đánh giá hoặc điều hướng
+      router.push(`/dishes/${dish.slug}/rate`);
+    });
+
+  const handleFollow = () =>
+    requireAuth(() => {
+      // TODO: gọi API follow chef: dish.creator?.id
+      // await followChef(dish.creator!.id)
+      // toast.success("Đã theo dõi đầu bếp");
+      // demo: console.log
+      console.log("follow chef", dish.creator?.id);
+    });
+
+  const handleRequestLogin = () => {
+    // cho Comments gọi khi user bấm gửi nhưng chưa login
+    const next = encodeURIComponent(`/dishes/${dish.slug}`);
+    router.push(`/auth/signin?next=${next}`);
+  };
 
   const videoUrl =
     dish.video_url ||
@@ -95,23 +121,7 @@ export default function DishDetailClient({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                className="flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white hover:bg-rose-50 hover:border-rose-300 transition-all duration-200 shadow-sm hover:shadow-md group"
-                aria-label="Yêu thích"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-rose-500 transition-colors"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
-
+              <WishlistButton dishId={dish.id} />
               <button
                 className="flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
                 aria-label="Tùy chọn khác"
@@ -227,35 +237,11 @@ export default function DishDetailClient({
                 </div>
               </div>
             )}
-
-            {/* Author Card */}
-            {dish.creator && (
-              <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30 p-5 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <div className="relative h-16 w-16 rounded-2xl overflow-hidden border-2 border-orange-200 shadow-md flex-shrink-0">
-                    <Image
-                      src={dish.creator.avatar_url ?? "/default-avatar.png"}
-                      alt={dish.creator.display_name ?? "Chef"}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-gray-500 mb-1">
-                      Đầu bếp
-                    </div>
-                    <div className="font-bold text-gray-900 text-lg truncate">
-                      {dish.creator.display_name ?? "Anonymous"}
-                    </div>
-                  </div>
-
-                  <button className="rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/30 hover:shadow-xl hover:scale-105 transition-all duration-200">
-                    Follow
-                  </button>
-                </div>
-              </div>
+            {dish.creator?.id && (
+              <AuthorCard
+                chefId={dish.creator.id}
+                onRequireLogin={handleRequestLogin}
+              />
             )}
 
             {/* Video Section */}
@@ -551,11 +537,21 @@ export default function DishDetailClient({
                     </div>
                   </div>
 
-                  <button className="w-full rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:scale-[1.02] transition-all duration-200">
+                  <button
+                    onClick={handleRate}
+                    className="w-full rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-6 py-3.5 text-sm font-bold text-white shadow-xl hover:scale-[1.02] transition-all"
+                  >
                     ⭐ Đánh giá món này
                   </button>
                 </div>
               </div>
+
+              <Comments
+                dishId={dish.id}
+                currentUserId={user?.id ?? null}
+                isAdmin={role === "admin"}
+                onRequireLogin={handleRequestLogin}
+              />
 
               {/* Share Card */}
               <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-lg">

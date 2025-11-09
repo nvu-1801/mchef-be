@@ -1,34 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listDishesClient as listDishes } from "@/modules/dishes/service/dish.client";
+import {
+  listDishesClient as listDishes,
+  listCategoriesClient,
+} from "@/modules/dishes/service/dish.client";
 import Carousel from "@/components/common/Carousel";
 import SearchBar from "@/components/common/SearchBar";
 import SideToc from "@/components/common/side-toc";
 import DishGrid from "@/components/home/dish-grid";
 import { Dish } from "@/modules/dishes/dish-public";
+import { supabaseBrowser } from "@/libs/supabase/supabase-client"; // ⬅️ thêm
 
 const PAGE_SIZE = 10;
 
 export default function HomePage() {
   const [featuredDishes, setFeaturedDishes] = useState<Dish[]>([]);
-
-  // Dữ liệu cho từng loại section
   const [allDishes, setAllDishes] = useState<Dish[]>([]);
   const [nonVegDishes, setNonVegDishes] = useState<Dish[]>([]);
   const [vegDishes, setVegDishes] = useState<Dish[]>([]);
-
-  // Tổng số lượng
   const [totalAll, setTotalAll] = useState(0);
   const [totalVeg, setTotalVeg] = useState(0);
   const [totalNonVeg, setTotalNonVeg] = useState(0);
-
-  // Trang hiện tại từng loại
   const [pageAll, setPageAll] = useState(1);
   const [pageVeg, setPageVeg] = useState(1);
   const [pageNonVeg, setPageNonVeg] = useState(1);
-
+  const [categories, setCategories] = useState<
+    Array<{ id: string; slug: string; name: string; icon: string | null }>
+  >([]);
+  const [selectedCatId, setSelectedCatId] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
+
+  // ⬇️ NEW: trạng thái quyền Premium của user
+  const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
 
   const tocItems = [
     { id: "section-featured", label: "Đề xuất nổi bật" },
@@ -38,12 +42,56 @@ export default function HomePage() {
   ];
 
   useEffect(() => {
+    async function init() {
+      const cats = await listCategoriesClient();
+      setCategories(cats);
+    }
+    init();
+  }, []);
+
+  // ⬇️ NEW: kiểm tra user có Premium không (client-side, qua RLS)
+  useEffect(() => {
+    const sb = supabaseBrowser();
+    async function checkPremium() {
+      try {
+        const {
+          data: { user },
+        } = await sb.auth.getUser();
+        if (!user) {
+          setHasPremiumAccess(false);
+          return;
+        }
+        const { count, error } = await sb
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "PAID")
+          .eq("plan_id", "premium");
+
+        if (error) {
+          // an toàn: không chặn UI nếu lỗi, coi như chưa có premium
+          setHasPremiumAccess(false);
+          return;
+        }
+        setHasPremiumAccess((count ?? 0) > 0);
+      } catch {
+        setHasPremiumAccess(false);
+      }
+    }
+    checkPremium();
+  }, []); // chạy 1 lần khi vào trang
+
+  useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
         const [featuredRes, allRes, vegRes, nonVegRes] = await Promise.all([
           listDishes({ sortBy: "created_at", pageSize: 10 }),
-          listDishes({ page: pageAll, pageSize: PAGE_SIZE }),
+          listDishes({
+            page: pageAll,
+            pageSize: PAGE_SIZE,
+            cat: selectedCatId !== "all" ? selectedCatId : undefined,
+          }),
           listDishes({ page: pageVeg, pageSize: PAGE_SIZE, diet: "veg" }),
           listDishes({ page: pageNonVeg, pageSize: PAGE_SIZE, diet: "nonveg" }),
         ]);
@@ -61,11 +109,16 @@ export default function HomePage() {
     }
 
     fetchData();
-  }, [pageAll, pageVeg, pageNonVeg]);
+  }, [pageAll, pageVeg, pageNonVeg, selectedCatId]);
 
   const totalPagesAll = Math.ceil(totalAll / PAGE_SIZE);
   const totalPagesVeg = Math.ceil(totalVeg / PAGE_SIZE);
   const totalPagesNonVeg = Math.ceil(totalNonVeg / PAGE_SIZE);
+
+  const selectedCatName =
+    selectedCatId === "all"
+      ? "Tất cả món ăn"
+      : categories.find((c) => c.id === selectedCatId)?.name ?? "Tất cả món ăn";
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">
@@ -115,13 +168,14 @@ export default function HomePage() {
               gradient="from-amber-50 via-orange-50 to-yellow-50"
               border="border-amber-300"
               dishes={featuredDishes}
+              hasPremiumAccess={hasPremiumAccess}
             />
 
             {/* Tất cả món ăn */}
             <PaginatedSection
               id="section-all"
               icon="📚"
-              title="Tất cả món ăn"
+              title={selectedCatName} // ⬅️ hiển thị theo cate đang chọn (tuỳ chọn)
               desc="Khám phá toàn bộ bộ sưu tập"
               gradient="from-blue-50 via-indigo-50 to-purple-50"
               border="border-blue-300"
@@ -129,6 +183,42 @@ export default function HomePage() {
               page={pageAll}
               totalPages={totalPagesAll}
               onPageChange={setPageAll}
+              hasPremiumAccess={hasPremiumAccess}
+              filters={
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCatId("all");
+                      setPageAll(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-full border text-sm ${
+                      selectedCatId === "all"
+                        ? "bg-purple-600 text-white border-purple-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-purple-300"
+                    }`}
+                  >
+                    Tất cả
+                  </button>
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        setSelectedCatId(c.id);
+                        setPageAll(1);
+                      }}
+                      className={`px-3 py-1.5 rounded-full border text-sm flex items-center gap-1.5 ${
+                        selectedCatId === c.id
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-purple-300"
+                      }`}
+                      title={c.slug}
+                    >
+                      <span className="text-base">{c.icon ?? "🍽️"}</span>
+                      <span>{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              }
             />
 
             {/* Món mặn */}
@@ -143,6 +233,7 @@ export default function HomePage() {
               page={pageNonVeg}
               totalPages={totalPagesNonVeg}
               onPageChange={setPageNonVeg}
+              hasPremiumAccess={hasPremiumAccess}
             />
 
             {/* Món chay */}
@@ -157,6 +248,7 @@ export default function HomePage() {
               page={pageVeg}
               totalPages={totalPagesVeg}
               onPageChange={setPageVeg}
+              hasPremiumAccess={hasPremiumAccess} // ⬅️ truyền xuống
             />
           </div>
         </div>
@@ -175,6 +267,7 @@ function Section({
   gradient,
   border,
   dishes,
+  hasPremiumAccess,
 }: {
   id: string;
   icon: string;
@@ -193,7 +286,13 @@ function Section({
     review_status?: ReviewStatus | null;
     video_url?: string | null;
     cover_image_url?: string | null;
+    premium?: {
+      active: boolean;
+      required_plan: string;
+      chef_id?: string;
+    } | null; // ⬅️ thêm
   }>;
+  hasPremiumAccess: boolean; // ⬅️ thêm
 }) {
   return (
     <section id={id} className="scroll-mt-32">
@@ -210,8 +309,9 @@ function Section({
           </div>
         </div>
         <DishGrid
-          dishes={dishes}
+          dishes={dishes as any}
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+          hasPremiumAccess={hasPremiumAccess} // ⬅️ truyền
         />
       </div>
     </section>
@@ -229,6 +329,8 @@ function PaginatedSection({
   page,
   totalPages,
   onPageChange,
+  hasPremiumAccess,
+  filters,
 }: {
   id: string;
   icon: string;
@@ -240,6 +342,8 @@ function PaginatedSection({
   page: number;
   totalPages: number;
   onPageChange: (p: number) => void;
+  hasPremiumAccess: boolean;
+  filters?: React.ReactNode;
 }) {
   return (
     <section id={id} className="scroll-mt-32">
@@ -256,12 +360,15 @@ function PaginatedSection({
           </div>
         </div>
 
+        {filters ? <div className="mb-4">{filters}</div> : null}
+
         <DishGrid
-          dishes={dishes}
+          dishes={dishes as any}
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"
+          hasPremiumAccess={hasPremiumAccess} // ⬅️ truyền
         />
 
-        {/* Nút chuyển trang - Style 3: Classic Simple */}
+        {/* Pagination */}
         <div className="flex justify-center items-center gap-3 mt-6">
           <button
             disabled={page === 1}

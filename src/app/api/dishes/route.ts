@@ -196,7 +196,8 @@ export async function GET(request: Request) {
     dish_ingredients ( amount, note, ingredient:ingredient_id ( id, name, unit ) ),
     ratings ( user_id, stars, comment, created_at ),
     favorites ( user_id ),
-    creator:created_by ( id, display_name, avatar_url )
+    creator:created_by ( id, display_name, avatar_url ),
+    premium:premium_dishes ( active, required_plan )
     `,
       { count: "exact" }
     )
@@ -247,7 +248,14 @@ export async function GET(request: Request) {
 
   // ====== SAU KHI LẤY VỀ ======
 
+  // Define type for dish item
+  type DishItem = {
+    diet?: string;
+    dish_rating_stats?: Array<{ rating_avg?: number }>;
+  };
+
   // Helper: lấy rating trung bình an toàn
+<<<<<<< HEAD
   function getRatingAvg(d: DishRow) {
     return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
   }
@@ -262,6 +270,22 @@ export async function GET(request: Request) {
   const nonveg = items
     .filter((d) => d.diet === "nonveg")
     .sort((a, b) => getRatingAvg(b) - getRatingAvg(a));
+=======
+  function getRatingAvg(d: DishItem) {
+    return d?.dish_rating_stats?.[0]?.rating_avg ?? 0;
+  }
+
+  // Tách món chay / mặn, sắp xếp giảm dần theo rating
+  const items = (data ?? []) as DishItem[];
+
+  const veg = items
+    .filter((d: DishItem) => d.diet === "veg")
+    .sort((a: DishItem, b: DishItem) => getRatingAvg(b) - getRatingAvg(a));
+
+  const nonveg = items
+    .filter((d: DishItem) => d.diet === "nonveg")
+    .sort((a: DishItem, b: DishItem) => getRatingAvg(b) - getRatingAvg(a));
+>>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
   // Gộp lại (món chay trước, món mặn sau)
   const combined = [...veg, ...nonveg];

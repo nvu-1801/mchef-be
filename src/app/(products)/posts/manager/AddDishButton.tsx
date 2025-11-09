@@ -74,7 +74,7 @@ export default function AddDishButton({
           </div>
 
           {/* Body */}
-          <div className="px-6 py-6 overflow-y-auto">
+          <div className="px-4 py-6 overflow-y-auto">
             <DishForm
               action={async (fd) => {
                 await action(fd);

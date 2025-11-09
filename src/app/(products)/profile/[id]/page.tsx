@@ -2,8 +2,8 @@
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import Link from "next/link";
-import DishMini from "../../../../../components/chef/DishMini";
-import RatingItem from "../../../../../components/chef/RatingItem";
+import DishMini from "@/components/chef/DishMini";
+import RatingItem from "@/components/chef/RatingItem";
 
 export const revalidate = 60;
 
@@ -438,28 +438,6 @@ export default async function ChefDetailPage({
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Actions */}
-            <div className="rounded-3xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Actions
-              </h3>
-              <div className="space-y-3">
-                <button className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 text-sm font-bold text-white hover:shadow-lg hover:shadow-emerald-500/30 transition">
-                  ✓ Approve Chef
-                </button>
-                <button className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-4 py-3 text-sm font-bold text-white hover:shadow-lg hover:shadow-rose-500/30 transition">
-                  ✕ Reject Application
-                </button>
-                <button className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition">
-                  ✎ Edit Details
-                </button>
-              </div>
-            </div>
-
             {/* Info */}
             <div className="rounded-3xl border bg-white p-6 shadow-sm">
               <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">

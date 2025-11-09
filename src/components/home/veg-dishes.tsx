@@ -2,6 +2,7 @@
 import Link from "next/link";
 import DishGrid, { type DishCard } from "@/components/home/dish-grid";
 import { listDishes } from "@/modules/dishes/service/dish.service";
+import type { Dish } from "@/modules/dishes/dish-public";
 
 export const revalidate = 60;
 
@@ -14,6 +15,7 @@ type Props = {
   q?: string;
 };
 
+<<<<<<< HEAD
 type DishItem = {
   id: string;
   slug: string;
@@ -26,6 +28,10 @@ type DishItem = {
   review_status: string;
   video_url: string | null;
 };
+=======
+// Use the shared `Dish` type from the service to avoid unknown casts
+type DishItem = Dish & { [k: string]: unknown };
+>>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
 // Type guard để kiểm tra object có phải DishItem không
 function isDishItem(item: unknown): item is DishItem {
@@ -50,8 +56,13 @@ export default async function VegDishesSection({
     pageSize: 48,
   });
 
+<<<<<<< HEAD
   // Validate và filter items
   const itemsTyped = items.filter(isDishItem);
+=======
+  // `listDishes` returns `items: Dish[]` so we can treat them as DishItem
+  const itemsTyped = items as DishItem[];
+>>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
   const veg = itemsTyped.filter((d) => {
     const v = String(d.diet ?? "").toLowerCase();
@@ -69,6 +80,7 @@ export default async function VegDishesSection({
   const start = (clampedPage - 1) * pageSize;
   const show = veg.slice(start, start + pageSize);
 
+<<<<<<< HEAD
   const dishes: DishCard[] = show.map((d) => {
     return {
       id: String(d.id),
@@ -84,6 +96,24 @@ export default async function VegDishesSection({
       images: null, // Not available in Dish type from listDishes
     };
   });
+=======
+  const dishes: DishCard[] = show.map((d) => ({
+    id: String(d.id),
+    slug: String(d.slug),
+    title: String(d.title),
+    category_name:
+      typeof (d as Record<string, unknown>).category_name === "string"
+        ? (d as unknown as { category_name: string }).category_name
+        : undefined,
+    time_minutes: typeof d.time_minutes === "number" ? d.time_minutes : null,
+    servings: typeof d.servings === "number" ? d.servings : null,
+    diet: (d.diet ?? null) as string | null,
+    review_status: d.review_status ?? null,
+    video_url: d.video_url ?? null,
+    cover_image_url: d.cover_image_url ?? null,
+
+  }));
+>>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
   const buildHref = (p: number) => {
     const usp = new URLSearchParams();

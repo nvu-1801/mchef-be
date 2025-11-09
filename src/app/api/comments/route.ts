@@ -84,10 +84,14 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+<<<<<<< HEAD
   let items = (data ?? []).map((row) => normalizeCommentRow(row as CommentRawRow));
+=======
+  let items = data || [];
+>>>>>>> 3057f1c6c06ccbc727f902bb54446fc1c00e25b5
 
   if (cursor && cursorId) {
-    items = items.filter((row) => {
+    items = items.filter((row: { id: string; created_at: string }) => {
       if (row.created_at < cursor) return true;
       if (row.created_at > cursor) return false;
       return row.id < cursorId;
@@ -102,19 +106,22 @@ export async function GET(req: Request) {
   const nextCursorId =
     hasMore && pageItems.length > 0 ? pageItems[pageItems.length - 1].id : null;
 
-  const result: CommentDTO[] = pageItems.map((c) => ({
-    id: c.id,
-    content: c.content,
-    created_at: c.created_at,
-    user_id: c.user_id,
-    user: c.user
-      ? {
-          id: c.user.id,
-          display_name: c.user.display_name,
-          avatar_url: c.user.avatar_url,
-        }
-      : null,
-  }));
+  const result: CommentDTO[] = pageItems.map((c) => {
+    const userRow = Array.isArray(c.user) ? c.user[0] ?? null : c.user;
+    return {
+      id: c.id,
+      content: c.content,
+      created_at: c.created_at,
+      user_id: c.user_id,
+      user: userRow
+        ? {
+            id: userRow.id,
+            display_name: userRow.display_name,
+            avatar_url: userRow.avatar_url,
+          }
+        : null,
+    };
+  });
 
   return NextResponse.json({
     items: result,

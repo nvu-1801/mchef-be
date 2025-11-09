@@ -21,7 +21,7 @@ type ApiMe = {
   skills: string[];
   role: string;
   certStatus: "none" | "pending" | "verified" | "rejected" | null;
-  certificates: Certificate[]; 
+  certificates: Certificate[];
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -44,9 +44,15 @@ export type ProfileViewProps = {
   certificates?: Certificate[] | null;
 };
 
+type ProfileDataWithCounts = ProfileData & {
+  followersCount?: number;
+  followingCount?: number;
+};
 export default function ProfileView({ initial }: { initial: ProfileData }) {
   // ---- STATE CHÍNH ----
-  const [profile, setProfile] = useState<ProfileData>(initial);
+  const [profile, setProfile] = useState<ProfileDataWithCounts>(
+    initial as ProfileDataWithCounts
+  );
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
@@ -93,7 +99,26 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
             : [],
           updatedAt: data.updatedAt ?? null,
         };
-        setProfile(next);
+        try {
+          const statRes = await fetch(`/api/chefs/${next.id}/follow`, {
+            method: "GET",
+            credentials: "include",
+          });
+          if (statRes.ok) {
+            const stat = await statRes.json();
+            setProfile((prev) => ({
+              ...prev,
+              followersCount:
+                typeof stat.followers === "number"
+                  ? stat.followers
+                  : prev.followersCount,
+              followingCount:
+                typeof stat.following === "number"
+                  ? stat.following
+                  : prev.followingCount,
+            }));
+          }
+        } catch {}
       } catch (e: unknown) {
         const msg =
           typeof e === "object" &&
@@ -348,6 +373,36 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                       Updated: {clientUpdatedLabel}
                     </time>
                   </div>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-gray-700">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zm-8 0c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.57.81-2.92 2.07-3.86A9.37 9.37 0 0 0 8 13zm8 0c-.29 0-.62.02-.97.05A6.02 6.02 0 0 1 18 18v2h6v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                    <strong className="font-semibold">
+                      {profile.followersCount ?? 0}
+                    </strong>{" "}
+                    Followers
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-gray-700">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                    <strong className="font-semibold">
+                      {profile.followingCount ?? 0}
+                    </strong>{" "}
+                    Following
+                  </span>
                 </div>
 
                 <div className="shrink-0">

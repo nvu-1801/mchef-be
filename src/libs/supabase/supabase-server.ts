@@ -1,12 +1,11 @@
-// src/libs/supabase/supabase-server.ts
+// libs/supabase/supabase-server.ts
 import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
-// ⚙️ Hàm này cần async để await cookies()
 export async function supabaseServer() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -14,9 +13,15 @@ export async function supabaseServer() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(_name: string, _value: string, _options: CookieOptions) {},
-        remove(_name: string, _options: CookieOptions) {},
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: "", ...options, expires: new Date(0) });
+        },
       },
     }
   );
+
+  return client;
 }

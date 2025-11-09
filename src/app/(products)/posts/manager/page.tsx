@@ -4,6 +4,7 @@ import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { createDish as _createDish, deleteDish } from "./actions";
 import AddDishButton from "./AddDishButton";
 import VideoDialog from "../../../../components/common/VideoDialog";
+import PremiumSwitchWithRefresh from "@/components/dish/PremiumSwitchWithRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -413,6 +414,10 @@ export default async function DishesManagerPage() {
                           🗑️ Xoá
                         </button>
                       </form>
+                      <PremiumSwitchWithRefresh
+                        dishId={d.id}
+                        compact
+                      />
                     </div>
                   </div>
                 </article>

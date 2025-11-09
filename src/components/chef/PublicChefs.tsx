@@ -219,7 +219,7 @@ function ChefCard({ c }: { c: PublicChef }) {
         {/* Actions */}
         <div className="flex items-center gap-2 pt-2">
           <Link
-            href={`/profile/${c.user_id}`}
+            href={`/admin/chefs/${c.id}`}
             className="flex-1 rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm font-medium text-center hover:bg-gray-50 transition"
           >
             👤 Profile

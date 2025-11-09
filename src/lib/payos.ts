@@ -29,3 +29,23 @@ export async function getPayOSClient() {
     return new PayOSCtor(CLIENT_ID, API_KEY, CHECKSUM_KEY);
   }
 }
+
+
+
+// import { PayOS } from "@payos/node";
+
+// // lib/payos.ts
+// export function getPayOSClient() {
+//   const CLIENT_ID = process.env.PAYOS_CLIENT_ID!;
+//   const API_KEY = process.env.PAYOS_API_KEY!;
+//   const CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY!;
+//   if (!CLIENT_ID || !API_KEY || !CHECKSUM_KEY) {
+//     throw new Error("PAYOS env missing");
+//   }
+
+//   return new PayOS({
+//     clientId: CLIENT_ID,
+//     apiKey: API_KEY,
+//     checksumKey: CHECKSUM_KEY,
+//   });
+// }

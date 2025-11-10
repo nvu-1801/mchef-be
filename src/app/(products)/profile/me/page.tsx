@@ -12,13 +12,31 @@ export default async function ProfileMePage() {
   } = await sb.auth.getUser();
   if (!user) redirect("/auth/signin?next=/profile/me");
 
-  const { data: prof } = await sb
+  // Lấy hồ sơ
+  const { data: prof, error: profErr } = await sb
     .from("profiles")
     .select(
       "id, email, display_name, avatar_url, bio, skills, role, updated_at, cert_status, certificates"
     )
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profErr) {
+    // tuỳ bạn muốn xử lý thế nào
+    // throw new Error(profErr.message);
+  }
+
+  // Đếm followers (ai theo dõi tôi)
+  const { count: followersCount = 0, error: folErr1 } = await sb
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("followed_id", user.id);
+
+  // Đếm following (tôi đang theo dõi ai)
+  const { count: followingCount = 0, error: folErr2 } = await sb
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("follower_id", user.id);
 
   const initialProfile = {
     id: user.id,
@@ -31,6 +49,10 @@ export default async function ProfileMePage() {
     certStatus: prof?.cert_status ?? null,
     certificates: prof?.certificates ?? [],
     updatedAt: prof?.updated_at ?? null,
+
+    // 👇 ép về number (không còn null)
+    followersCount: followersCount ?? 0,
+    followingCount: followingCount ?? 0,
   };
 
   return (

@@ -27,12 +27,20 @@ export type Applicant = {
   updated_at: string | null;
 };
 
+// function makePreviewUrl(cert: AdminCert): string | null {
+//   if (!cert) return null;
+//   if (cert.signedUrl) return cert.signedUrl;
+//   if (cert.file_path && /^https?:\/\//i.test(cert.file_path))
+//     return cert.file_path;
+//   if (cert.mime_type === "link/url" && cert.file_path) return cert.file_path;
+//   return null;
+// }
+
 function makePreviewUrl(cert: AdminCert): string | null {
   if (!cert) return null;
-  if (cert.signedUrl) return cert.signedUrl;
-  if (cert.file_path && /^https?:\/\//i.test(cert.file_path))
-    return cert.file_path;
-  if (cert.mime_type === "link/url" && cert.file_path) return cert.file_path;
+  if (cert.signedUrl) return cert.signedUrl;                // server đã ký sẵn
+  if (cert.mime_type === "link/url" && cert.file_path) return cert.file_path; // link ngoài
+  if (cert.file_path && /^https?:\/\//i.test(cert.file_path)) return cert.file_path; // URL tuyệt đối
   return null;
 }
 
@@ -52,37 +60,52 @@ export default function ApplicantCard({ applicant }: { applicant: Applicant }) {
     ? applicant.certificates
     : [];
 
-  const [signedMap, setSignedMap] = useState<Record<string, string | null>>({});
+ const [signedMap, setSignedMap] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
-    const need = adminCerts.filter((c) => !makePreviewUrl(c) && c.file_path);
+    // Lọc những cert cần ký (không có URL sẵn)
+    const need = adminCerts.filter(
+      (c) => !makePreviewUrl(c) && (c.id || c.file_path)
+    );
     if (need.length === 0) return;
 
     let mounted = true;
     (async () => {
       const promises = need.map(async (c) => {
         try {
-          const res = await fetch(
-            `/api/admin/certificates/signed?file=${encodeURIComponent(
-              c.file_path!
-            )}`,
-            { cache: "no-store" }
-          );
-          if (!res.ok) return { key: c.file_path!, url: null };
+          // Ưu tiên ký theo ID nếu có, an toàn hơn
+          const url = c.id
+            ? `/api/admin/certificates/signed?id=${encodeURIComponent(c.id)}`
+            : `/api/admin/certificates/signed?file=${encodeURIComponent(c.file_path!)}`;
+
+          const res = await fetch(url, {
+            cache: "no-store",
+            credentials: "include", // 🔑 bắt buộc để gửi session cookie
+          });
+
+          if (!res.ok) {
+            return { keyId: c.id, keyPath: c.file_path!, url: null };
+          }
           const j = (await res.json().catch(() => null)) as {
-            signedUrl?: string;
+            signedUrl?: string | null;
           } | null;
-          return { key: c.file_path!, url: j?.signedUrl ?? null };
+
+          return { keyId: c.id, keyPath: c.file_path!, url: j?.signedUrl ?? null };
         } catch {
-          return { key: c.file_path!, url: null };
+          return { keyId: c.id, keyPath: c.file_path!, url: null };
         }
       });
 
       const results = await Promise.all(promises);
       if (!mounted) return;
-      setSignedMap((s) => {
-        const copy = { ...s };
-        for (const r of results) copy[r.key] = r.url;
+
+      setSignedMap((prev) => {
+        const copy = { ...prev };
+        for (const r of results) {
+          // ưu tiên key theo id, fallback theo file_path
+          if (r.keyId) copy[r.keyId] = r.url;
+          if (r.keyPath) copy[r.keyPath] = r.url;
+        }
         return copy;
       });
     })();

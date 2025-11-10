@@ -27,6 +27,19 @@ export type Dish = {
   // ⭐ Từ VIEW dish_rating_stats
   rating_avg?: number | null;
   rating_count?: number | null;
+
+  category?: {
+    id: string;
+    slug: string;
+    name: string;
+    icon: string | null;
+  } | null;
+
+  premium?: {
+    active: boolean;
+    required_plan: string;
+    chef_id?: string;
+  } | null;
 };
 
 export type DishFull = Dish & {
@@ -35,6 +48,12 @@ export type DishFull = Dish & {
     slug: string;
     name: string;
     icon: string | null;
+  } | null;
+
+  premium?: {
+    active: boolean;
+    required_plan: string;
+    chef_id?: string;
   } | null;
 
   dish_images?: {

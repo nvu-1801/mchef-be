@@ -7,6 +7,10 @@ export type ProfileData = {
   skills: string[];
   role: string;
   certStatus?: string | null;
-  certificates?: Record<string, unknown>[]; 
+  certificates?: Record<string, unknown>[];
   updatedAt: string | null;
+
+  // 👇 NEW
+  followersCount?: number;
+  followingCount?: number;
 };

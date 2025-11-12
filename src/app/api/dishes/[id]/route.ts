@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       `
     id, category_id, title, slug, cover_image_url, diet, time_minutes, servings, tips,
     created_by, published, created_at, updated_at,
-    video_url,
+    video_url, 
     category:category_id ( id, slug, name, icon ),
 
     dish_images ( id, image_url, alt, sort ),

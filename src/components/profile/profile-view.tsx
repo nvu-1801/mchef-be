@@ -8,6 +8,7 @@ import { supabaseBrowser } from "../../libs/supabase/supabase-client";
 import MyCertificates from "./MyCertificates";
 import Image from "next/image";
 import Link from "next/link";
+import { useUserPlan } from "../../hooks/useUserPlan";
 
 type ToastState = { type: "success" | "error"; msg: string } | null;
 
@@ -24,6 +25,9 @@ type ApiMe = {
   certificates: Certificate[];
   createdAt: string | null;
   updatedAt: string | null;
+  isPremium: boolean;
+  planId: string | null;
+  planExpiredAt: string | null;
 };
 
 export type Certificate = {
@@ -66,6 +70,9 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
   const [certLink, setCertLink] = useState("");
   const [certSubmitting, setCertSubmitting] = useState(false);
 
+  // ---- USER PLAN HOOK ----
+  const { plan, refetch: refetchPlan } = useUserPlan();
+
   // Lấy lại dữ liệu mới nhất từ API (cookie-based)
   useEffect(() => {
     let mounted = true;
@@ -98,7 +105,12 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
             ? (data.certificates as Certificate[])
             : [],
           updatedAt: data.updatedAt ?? null,
+          // Thêm premium info từ plan hook
+          planId: plan?.plan_id ?? null,
+          planExpiredAt: plan?.plan_expired_at ?? null,
+          isPremium: plan?.is_premium ?? false,
         };
+        setProfile(next); // 👈 Set profile với dữ liệu mới nhất
         try {
           const statRes = await fetch(`/api/chefs/${next.id}/follow`, {
             method: "GET",
@@ -135,7 +147,17 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [plan]);
+
+  // Sync premium status từ plan hook
+  // useEffect(() => {
+  //   setProfile((prev) => ({
+  //     ...prev,
+  //     planId: plan?.plan_id ?? null,
+  //     planExpiredAt: plan?.plan_expired_at ?? null,
+  //     isPremium: plan?.is_premium ?? false,
+  //   }));
+  // }, [plan]);
 
   const updatedLabel = useMemo(() => {
     if (!profile.updatedAt) return "—";
@@ -403,6 +425,32 @@ export default function ProfileView({ initial }: { initial: ProfileData }) {
                     </strong>{" "}
                     Following
                   </span>
+
+                  {/* 👇 NEW - Premium Crown Icon (only for premium users) */}
+                  {profile.isPremium && (
+                    <button
+                      type="button"
+                      title={`Premium Member - Expires: ${
+                        profile.planExpiredAt
+                          ? new Date(profile.planExpiredAt).toLocaleDateString("vi-VN")
+                          : "—"
+                      }`}
+                      onClick={() => {
+                        window.location.href = "/checkout/orders";
+                      }}
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="text-white"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
                 <div className="shrink-0">

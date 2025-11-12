@@ -96,7 +96,7 @@ export default function AdminDropdown({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Panel */}
       <div
-        className={`absolute right-0 top-full mt-2 w-56 rounded-2xl border border-gray-200 bg-white shadow-xl
+        className={`absolute right-0 top-full mt-0 w-56 rounded-2xl border border-gray-200 bg-white shadow-xl
                     ring-1 ring-black/5 overflow-hidden transition
                     ${open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"}`}
         role="menu"

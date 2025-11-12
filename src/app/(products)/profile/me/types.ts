@@ -10,7 +10,12 @@ export type ProfileData = {
   certificates?: Record<string, unknown>[];
   updatedAt: string | null;
 
-  // 👇 NEW
+  // 👇 NEW - Stats
   followersCount?: number;
   followingCount?: number;
+
+  // 👇 NEW - Premium status
+  planId?: string | null;
+  planExpiredAt?: string | null;
+  isPremium?: boolean;
 };

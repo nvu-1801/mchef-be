@@ -3,7 +3,7 @@ import { useState } from "react";
 import { startCheckout } from "@/lib/startCheckout";
 
 export default function PriceCard({
-  title, price, period, highlight, cta, planId, userId, children,
+  title, price, period, highlight, cta, planId, userId, children, disabled = false,
 }: {
   title: string;
   price: string;
@@ -13,6 +13,7 @@ export default function PriceCard({
   planId: string;
   userId: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -46,7 +47,7 @@ export default function PriceCard({
       {children}
       <button
         onClick={onClick}
-        disabled={loading}
+        disabled={loading || disabled}
         className="mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-sky-500 via-violet-500 to-pink-500 hover:brightness-110 transition disabled:opacity-60"
       >
         {loading ? "Đang tạo phiên thanh toán..." : cta.label}

@@ -1,4 +1,3 @@
-// components/layout/HeaderBar.tsx
 "use client";
 
 import Link from "next/link";
@@ -6,17 +5,25 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import AdminDropdown from "@/components/common/AdminDropdown";
 import SignOutButton from "@/components/auth/SignOutButton";
-import WishlistIcon from "@/components/common/WishlistIcon"; 
+import WishlistIcon from "@/components/common/WishlistIcon";
+import { useUserPlan } from "@/hooks/useUserPlan"; // 👈 BƯỚC 1: Import hook
 
 type Props = {
   isAdmin: boolean;
   user: { id: string } | null;
   isChef?: boolean;
+  // ⛔️ KHÔNG CẦN "isPremium" prop ở đây nữa
 };
 
 export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  // 👈 BƯỚC 2: Gọi hook để lấy plan
+  const { plan } = useUserPlan();
+
+  // 👈 BƯỚC 3: Tạo biến isPremium từ plan
+  const isPremium = plan?.is_premium ?? false;
 
   const NavLink = ({ href, label }: { href: string; label: string }) => {
     const active = pathname?.startsWith(href);
@@ -24,7 +31,11 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
       <Link
         href={href}
         className={`px-3 py-2 rounded-lg text-[15px] font-medium transition
-          ${active ? "text-gray-900 bg-gray-100" : "text-gray-700 hover:bg-gray-50"}`}
+          ${
+            active
+              ? "text-gray-900 bg-gray-100"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
         onClick={() => setOpen(false)}
       >
         {label}
@@ -34,7 +45,6 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* thanh nền */}
       <div className="bg-white/75 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
         <div className="max-w-7xl mx-auto px-3 sm:px-4">
           <div className="h-14 sm:h-16 flex items-center justify-between gap-2">
@@ -72,21 +82,42 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                   title="Chef Chat"
                   aria-label="Chef Chat"
                 >
-                  <svg className="w-5 h-5 mr-1 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5 mr-1 text-gray-700"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z" />
                   </svg>
                   <span className="hidden lg:inline">Chat</span>
                 </Link>
               )}
 
-              <Link
-                href="/upgrade"
-                className="inline-flex items-center justify-center h-10 rounded-xl px-3
-                           border border-gray-200 text-sm font-semibold text-gray-800
-                           hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-              >
-                Upgrade
-              </Link>
+              {/* 👇 BƯỚC 4: Sử dụng biến "isPremium" (từ hook) */}
+              {!isAdmin &&
+              (isPremium ? (
+                <span
+                  className="inline-flex items-center justify-center h-10 rounded-xl px-4
+                             text-sm font-semibold text-white
+                             bg-gradient-to-r from-violet-500 to-pink-500
+                             transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/30 hover:scale-105"
+                  title="Bạn đang ở gói Premium"
+                >
+                  Premium
+                </span>
+              ) : (
+                <Link
+                  href="/upgrade"
+                  className="inline-flex items-center justify-center h-10 rounded-xl px-3
+                             border border-gray-200 text-sm font-semibold text-gray-800
+                             hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                >
+                  Upgrade
+                </Link>
+              ))}
+              {/* 👆 Logic đã sử dụng hook 👆 */}
 
               <Link
                 href="/posts/manager"
@@ -132,11 +163,25 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                          border text-gray-700 hover:bg-gray-50 focus:outline-none
                          focus-visible:ring-2 focus-visible:ring-violet-500"
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 {open ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 )}
               </svg>
             </button>
@@ -146,13 +191,33 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
         {/* Mobile sheet */}
         <div
           className={`sm:hidden border-t overflow-hidden transition-[max-height,opacity] duration-200 ease-out
-            ${open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+            ${
+              open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            }`} /* Tăng max-height để vừa đủ */
         >
           <div className="px-3 py-3 space-y-2">
             <nav className="grid gap-1">
-              <Link href="/about" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">Giới thiệu</Link>
-              <Link href="/faq" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">Hỏi đáp</Link>
-              <Link href="/contact" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">Liên hệ</Link>
+              <Link
+                href="/about"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Giới thiệu
+              </Link>
+              <Link
+                href="/faq"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Hỏi đáp
+              </Link>
+              <Link
+                href="/contact"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Liên hệ
+              </Link>
             </nav>
 
             <div className="flex items-center gap-2 pt-2">
@@ -163,7 +228,13 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                            border border-gray-200 text-sm text-gray-800 hover:bg-gray-50
                            focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
-                <svg className="w-5 h-5 mr-1 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  className="w-5 h-5 mr-1 text-gray-700"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
                 Wishlist
@@ -177,7 +248,13 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                              border border-gray-200 text-sm text-gray-800 hover:bg-gray-50
                              focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                 >
-                  <svg className="w-5 h-5 mr-1 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5 mr-1 text-gray-700"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z" />
                   </svg>
                   Chat
@@ -186,15 +263,29 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link
-                href="/upgrade"
-                onClick={() => setOpen(false)}
-                className="flex-1 inline-flex items-center justify-center h-10 rounded-xl
-                           border border-gray-200 text-sm font-semibold text-gray-800 hover:bg-gray-50
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-              >
-                Upgrade
-              </Link>
+              {/* 👇 BƯỚC 4: Sử dụng biến "isPremium" (từ hook) */}
+              {isPremium ? (
+                <span
+                  className="flex-1 inline-flex items-center justify-center h-10 rounded-xl px-3
+                             text-sm font-semibold text-white cursor-not-allowed
+                             bg-gradient-to-r from-violet-500 to-pink-500"
+                  title="Bạn đang ở gói Premium"
+                >
+                  Premium
+                </span>
+              ) : (
+                <Link
+                  href="/upgrade"
+                  onClick={() => setOpen(false)}
+                  className="flex-1 inline-flex items-center justify-center h-10 rounded-xl
+                             border border-gray-200 text-sm font-semibold text-gray-800 hover:bg-gray-50
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                >
+                  Upgrade
+                </Link>
+              )}
+              {/* 👆 Logic đã sử dụng hook 👆 */}
+
               <Link
                 href="/posts/manager"
                 onClick={() => setOpen(false)}

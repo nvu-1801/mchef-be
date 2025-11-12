@@ -2,16 +2,43 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useUserPlan } from "@/hooks/useUserPlan";
 
 export default function CheckoutReturnPage() {
   const params = useSearchParams();
   const orderCode = params.get("orderCode");
   const status = (params.get("status") || "success").toLowerCase(); // success/paid/failed
   const message = params.get("message") || "";
-
   const success = status === "success" || status === "paid";
+
+  // Refetch user plan sau khi thanh toán xong
+  const { plan, refetch } = useUserPlan();
+
+  useEffect(() => {
+    if (success) {
+      // Webhook xử lý mất ~1-3 giây, so retry multiple times với interval
+      let attempt = 0;
+      const maxAttempts = 5;
+      const interval = 1500; // 1.5 giây giữa các lần retry
+      
+      const retryFetch = () => {
+        attempt++;
+        console.log(`[checkout/return] Refetching plan (attempt ${attempt}/${maxAttempts})`);
+        refetch();
+        
+        if (attempt < maxAttempts) {
+          setTimeout(retryFetch, interval);
+        }
+      };
+      
+      // Start từ 2 giây sau (để webhook có time xử lý)
+      const timer = setTimeout(retryFetch, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [success, refetch]);
 
   const palette = useMemo(
     () =>
@@ -128,7 +155,7 @@ export default function CheckoutReturnPage() {
               {success ? (
                 <>
                   <Link
-                    href="/dashboard"
+                    href="/checkout/orders"
                     className={`group inline-flex items-center justify-center rounded-xl bg-gradient-to-r ${palette.primaryBtn} px-5 py-3 text-sm font-bold text-white shadow-md transition-all duration-200 hover:shadow-[0_8px_30px_rgba(16,185,129,0.35)] active:scale-[0.98]`}
                   >
                     <svg
@@ -141,20 +168,16 @@ export default function CheckoutReturnPage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Về Dashboard
+                    Xem Hóa Đơn
                   </Link>
                   <Link
-                    href={`/orders/${orderCode ?? ""}`}
-                    className="inline-flex items-center justify-center rounded-xl border border-emerald-200/70 bg-white/70 px-5 py-3 text-sm font-semibold text-emerald-700 shadow-sm backdrop-blur transition-colors duration-200 hover:bg-white disabled:opacity-60"
-                    aria-disabled={!orderCode}
-                    onClick={(e) => {
-                      if (!orderCode) e.preventDefault();
-                    }}
+                    href="/home"
+                    className="inline-flex items-center justify-center rounded-xl border border-emerald-200/70 bg-white/70 px-5 py-3 text-sm font-semibold text-emerald-700 shadow-sm backdrop-blur transition-colors duration-200 hover:bg-white"
                   >
-                    Xem hoá đơn
+                    Xem Món Ăn
                   </Link>
                 </>
               ) : (
@@ -176,13 +199,13 @@ export default function CheckoutReturnPage() {
                         d="M12 4v16m8-8H4"
                       />
                     </svg>
-                    Chọn gói khác
+                    Thử Lại
                   </Link>
                   <Link
                     href="/home"
                     className="inline-flex items-center justify-center rounded-xl border border-rose-200/70 bg-white/70 px-5 py-3 text-sm font-semibold text-rose-700 shadow-sm backdrop-blur transition-colors duration-200 hover:bg-white"
                   >
-                    Về trang chủ
+                    Về Trang Chủ
                   </Link>
                 </>
               )}
@@ -191,12 +214,12 @@ export default function CheckoutReturnPage() {
             {/* Tip */}
             <div className="mt-6 rounded-xl border border-emerald-200/60 bg-emerald-50/60 p-4 text-left dark:border-emerald-300/50" hidden={!success}>
               <p className="text-xs text-emerald-800">
-                ✅ Gợi ý: Quyền nâng cấp có thể cần vài giây để kích hoạt. Nếu chưa thấy hiệu lực, hãy tải lại Dashboard.
+                ✅ <strong>Thành công!</strong> Gói nâng cấp sẽ kích hoạt trong vài giây. Nếu chưa thấy, hãy tải lại hoặc xem lịch sử thanh toán.
               </p>
             </div>
             <div className="mt-6 rounded-xl border border-rose-200/60 bg-rose-50/60 p-4 text-left" hidden={success}>
               <p className="text-xs text-rose-800">
-                ⚠️ Nếu giao dịch bị huỷ do lỗi kỹ thuật, hãy thử lại sau hoặc dùng trình duyệt khác.
+                ⚠️ <strong>Thanh toán thất bại!</strong> Vui lòng <Link href="/upgrade" className="underline font-semibold">thử lại</Link> hoặc liên hệ hỗ trợ.
               </p>
             </div>
           </div>

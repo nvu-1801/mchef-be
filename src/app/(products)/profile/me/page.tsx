@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import ProfileView from "../../../../components/profile/profile-view";
+import { getUserPlan } from "@/libs/server/payment";
 
 export const revalidate = 0;
 
@@ -38,6 +39,9 @@ export default async function ProfileMePage() {
     .select("*", { count: "exact", head: true })
     .eq("follower_id", user.id);
 
+  // Lấy thông tin plan/premium
+  const userPlan = await getUserPlan(sb, user.id);
+
   const initialProfile = {
     id: user.id,
     email: user.email ?? prof?.email ?? "",
@@ -53,6 +57,11 @@ export default async function ProfileMePage() {
     // 👇 ép về number (không còn null)
     followersCount: followersCount ?? 0,
     followingCount: followingCount ?? 0,
+
+    // 👇 Thêm thông tin premium
+    planId: userPlan?.plan_id ?? null,
+    planExpiredAt: userPlan?.plan_expired_at ?? null,
+    isPremium: userPlan?.is_premium ?? false,
   };
 
   return (

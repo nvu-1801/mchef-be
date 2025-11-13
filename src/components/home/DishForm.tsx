@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useFormStatus } from "react-dom";
+import Image from "next/image";
 
 type Category = { id: string; name: string };
 type IngredientOption = { id: string; name: string; unit: string | null };
@@ -33,6 +34,9 @@ export default function DishForm({
     tips: string | null;
     video_url: string | null;
     published: boolean;
+    description?: string | null;
+    difficulty?: "easy" | "medium" | "hard" | string | null;
+    calories?: number | null;
     recipe_steps?: {
       step_no: number;
       content: string;
@@ -305,11 +309,272 @@ export default function DishForm({
           </div>
         </div>
 
-        {/* Image Upload Section (giữ nguyên) */}
-        {/* ... (NGUYÊN KHỐI ẢNH như bạn đã có ở trên, không đổi) ... */}
+        {/* ---------- IMAGE UPLOAD SECTION ---------- */}
+        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
+          <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 opacity-50 blur-3xl" />
+          <div className="relative space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white text-xl shadow-lg shadow-rose-500/30">
+                🖼️
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Ảnh bìa</h3>
+            </div>
 
-        {/* VIDEO SECTION (giữ nguyên) */}
-        {/* ... (NGUYÊN KHỐI VIDEO như bạn đã có ở trên, không đổi) ... */}
+            {/* Toggle Source */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+              <button
+                type="button"
+                onClick={() => setImageSource("url")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  imageSource === "url"
+                    ? "bg-white shadow text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🔗 URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setImageSource("upload")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  imageSource === "upload"
+                    ? "bg-white shadow text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                📤 Upload
+              </button>
+            </div>
+
+            {imageSource === "url" ? (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Đường dẫn ảnh
+                </label>
+                <input
+                  type="url"
+                  name="cover_image_url"
+                  value={coverPreview || ""}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Chọn file ảnh
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="cover_image_file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="w-full rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 bg-white text-gray-900 text-sm
+                             file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                             file:bg-gradient-to-r file:from-rose-500 file:to-pink-500 file:text-white file:font-semibold
+                             hover:border-rose-400 transition cursor-pointer"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Chấp nhận: JPG, PNG, WebP (tối đa 5MB)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Preview */}
+            {coverPreview && (
+              <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-gray-200">
+                <Image
+                  src={coverPreview}
+                  alt="Cover preview"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoverPreview(null);
+                    setUploadedFile(null);
+                  }}
+                  className="absolute top-2 right-2 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ---------- VIDEO SECTION ---------- */}
+        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
+          <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 opacity-50 blur-3xl" />
+          <div className="relative space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30">
+                🎬
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Video hướng dẫn
+              </h3>
+            </div>
+
+            {/* Toggle Source */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit">
+              <button
+                type="button"
+                onClick={() => setVideoSource("url")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  videoSource === "url"
+                    ? "bg-white shadow text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                🔗 URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoSource("upload")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                  videoSource === "upload"
+                    ? "bg-white shadow text-gray-900"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                📤 Upload
+              </button>
+            </div>
+
+            {videoSource === "url" ? (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Đường dẫn video
+                </label>
+                <input
+                  type="url"
+                  name="video_url"
+                  value={videoPreviewUrl || ""}
+                  onChange={(e) => handleVideoUrlChange(e.target.value)}
+                  placeholder="https://youtube.com/... hoặc https://example.com/video.mp4"
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Hỗ trợ: YouTube, Vimeo hoặc link video trực tiếp (.mp4, .webm)
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Chọn file video
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="video_file"
+                    accept="video/*"
+                    onChange={handleVideoFile}
+                    className="w-full rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 bg-white text-gray-900 text-sm
+                             file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                             file:bg-gradient-to-r file:from-purple-500 file:to-indigo-500 file:text-white file:font-semibold
+                             hover:border-purple-400 transition cursor-pointer"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Chấp nhận: MP4, WebM (tối đa {VIDEO_MAX_MB}MB)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Video Preview */}
+            {videoPreviewUrl && (
+              <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-gray-200 bg-black">
+                <video
+                  src={videoPreviewUrl}
+                  controls
+                  className="w-full h-full"
+                  poster={coverPreview || undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoPreviewUrl(null);
+                    setUploadedVideo(null);
+                  }}
+                  className="absolute top-2 right-2 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Info Section */}
+        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xl shadow-lg">
+              📊
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">
+              Thông tin bổ sung
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Difficulty */}
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                Độ khó
+              </label>
+              <select
+                name="difficulty"
+                defaultValue={defaultValues?.difficulty || ""}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              >
+                <option value="">— Chọn độ khó —</option>
+                <option value="easy">🟢 Dễ</option>
+                <option value="medium">🟡 Trung bình</option>
+                <option value="hard">🔴 Khó</option>
+              </select>
+            </div>
+
+            {/* Calories */}
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                Calories (kcal)
+              </label>
+              <input
+                type="number"
+                name="calories"
+                min={0}
+                defaultValue={defaultValues?.calories || ""}
+                placeholder="VD: 450"
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="sm:col-span-3">
+              <label className="block text-sm font-semibold mb-2 text-gray-700">
+                Mô tả món ăn
+              </label>
+              <textarea
+                name="description"
+                defaultValue={defaultValues?.description || ""}
+                rows={3}
+                placeholder="Mô tả ngắn gọn về món ăn, hương vị, nguồn gốc..."
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 bg-white text-gray-900 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition resize-none"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* ---------- NEW: Recipe Steps ---------- */}
         <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm">

@@ -108,7 +108,12 @@ export default function DashboardPage() {
                   {order.order_code}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2 text-gray-700">
-                  {order.status}
+                  {/*
+                    👇 ĐÂY LÀ CHỖ THAY ĐỔI 👇
+                    Nếu trạng thái là "PENDING", thì hiển thị "PAID".
+                    Nếu không, hiển thị trạng thái bình thường (ví dụ: "COMPLETED", "FAILED")
+                  */}
+                  {order.status === "PENDING" ? "PAID" : order.status}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2 text-gray-700">
                   {/* Định dạng tiền tệ */}

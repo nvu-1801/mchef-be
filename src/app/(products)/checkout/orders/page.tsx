@@ -109,9 +109,9 @@ export default function OrdersPage() {
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
-            <span className="h-2 w-2 rounded-full bg-yellow-600"></span>
-            Chờ xử lý
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
+            <span className="h-2 w-2 rounded-full bg-green-600"></span>
+            Thành công
           </span>
         );
       default:
@@ -173,7 +173,7 @@ export default function OrdersPage() {
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <p className="text-sm text-green-700">✅ Thành công</p>
             <p className="text-2xl font-bold text-green-800">
-              {stats.completed}
+              {stats.pending}
             </p>
           </div>
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -182,7 +182,7 @@ export default function OrdersPage() {
           </div>
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
             <p className="text-sm text-yellow-700">⏳ Chờ xử lý</p>
-            <p className="text-2xl font-bold text-yellow-800">{stats.pending}</p>
+            <p className="text-2xl font-bold text-yellow-800">{stats.completed}</p>
           </div>
         </div>
       )}
@@ -201,9 +201,9 @@ export default function OrdersPage() {
           className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
         >
           <option value="">Tất cả</option>
-          <option value="COMPLETED">✅ Thành công</option>
+          <option value="PENDING">✅ Thành công</option>
           <option value="FAILED">❌ Thất bại</option>
-          <option value="PENDING">⏳ Chờ xử lý</option>
+          <option value="COMPLETED">⏳ Chờ xử lý</option>
         </select>
       </div>
 

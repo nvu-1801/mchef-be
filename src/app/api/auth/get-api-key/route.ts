@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       userId: user.id,
       expiresIn: 86400, // 24 hours (optional)
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[get-api-key] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

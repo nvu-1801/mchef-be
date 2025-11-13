@@ -104,7 +104,6 @@ export default async function DishesManagerPage() {
     .eq("created_by", user.id)
     .order("created_at", { ascending: false });
   const dishes: DishListItem[] = (dishData ?? []) as DishListItem[];
-  console.log(dishes);
   const createDishVoid = async (formData: FormData): Promise<void> => {
     "use server";
     await _createDish(formData);

@@ -1,3 +1,4 @@
+// src/app/api/auth/get-api-key/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
 import { generateUserApiKey } from "@/libs/auth/verify-user-api-key";
@@ -7,14 +8,11 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/auth/get-api-key
- * Trả về API key cho client đã authenticated
- * Client sẽ dùng key này để gọi các API dishes CRUD
  */
 export async function GET(request: Request) {
   try {
     const sb = await supabaseServer();
 
-    // Lấy user từ session
     const {
       data: { user },
       error: authError,
@@ -24,20 +22,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Kiểm tra user có quyền không (optional)
+    // Optional: lấy profile nếu cần
     const { data: profile } = await sb
       .from("profiles")
       .select("role, can_post")
       .eq("id", user.id)
       .single();
 
-    // Tạo API key động dựa trên user ID + secret
     const apiKey = generateUserApiKey(user.id);
 
     return NextResponse.json({
       apiKey,
       userId: user.id,
-      expiresIn: 86400, // 24 hours (optional)
+      expiresIn: 86400,
     });
   } catch (error: unknown) {
     console.error("[get-api-key] Error:", error);
@@ -48,7 +45,6 @@ export async function GET(request: Request) {
   }
 }
 
-export function verifyUserApiKey(apiKey: string, userId: string): boolean {
-  const expected = generateUserApiKey(userId);
-  return apiKey === expected;
-}
+// ❌ KHÔNG được có dòng này trong route.ts:
+// export function verifyUserApiKey(...) { ... }
+// hoặc bất kỳ export khác ngoài GET/POST/runtime/dynamic...

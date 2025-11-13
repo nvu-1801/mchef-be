@@ -2,7 +2,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
-import { verifyUserApiKey } from "../../auth/get-api-key/route";
+// ❌ Sai:
+// import { verifyUserApiKey } from "../../auth/get-api-key/route";
+// ✅ Đúng:
+import { verifyUserApiKey } from "@/libs/auth/verify-user-api-key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +68,6 @@ function extractIdFromRequest(req: Request): string | null {
 
 // GET - Lấy món ăn (public, không cần API key)
 export async function GET(request: Request) {
-  // Bỏ validation cho GET vì là public data
   const identifier = extractIdFromRequest(request);
   if (!identifier)
     return NextResponse.json({ error: "Missing id" }, { status: 400 });

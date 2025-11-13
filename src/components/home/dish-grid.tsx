@@ -54,37 +54,66 @@ function RatingStars({ rating }: { rating: number }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
   return (
-    <div className="flex items-center gap-1" aria-label={`Rating ${rating.toFixed(1)} / 5`}>
+    <div
+      className="flex items-center gap-1"
+      aria-label={`Rating ${rating.toFixed(1)} / 5`}
+    >
       {[0, 1, 2, 3, 4].map((i) => {
         const isFull = i < full;
         const isHalf = i === full && half;
         return (
-          <span key={i} className="relative inline-block h-3.5 w-3.5 text-amber-500">
-            <svg viewBox="0 0 24 24" className="absolute inset-0" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden>
+          <span
+            key={i}
+            className="relative inline-block h-3.5 w-3.5 text-amber-500"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="absolute inset-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              aria-hidden
+            >
               <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
             </svg>
             {(isFull || isHalf) && (
-              <svg viewBox="0 0 24 24" className="absolute inset-0" style={isHalf ? { clipPath: "inset(0 50% 0 0)" } : undefined} fill="currentColor" aria-hidden>
+              <svg
+                viewBox="0 0 24 24"
+                className="absolute inset-0"
+                style={isHalf ? { clipPath: "inset(0 50% 0 0)" } : undefined}
+                fill="currentColor"
+                aria-hidden
+              >
                 <path d="m12 17.27-6.18 3.73 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.46 4.73 1.64 7.03z" />
               </svg>
             )}
           </span>
         );
       })}
-      <span className="ml-0.5 text-[11px] font-medium text-gray-700">{rating.toFixed(1)}</span>
+      <span className="ml-0.5 text-[11px] font-medium text-gray-700">
+        {rating.toFixed(1)}
+      </span>
     </div>
   );
 }
 
-const dietLabelMap: Record<string, string> = { veg: "Vegetarian", nonveg: "Non-Veg", vegan: "Vegan" };
-const dietEmojiMap: Record<string, string> = { veg: "🥗", nonveg: "🍖", vegan: "🌱" };
+const dietLabelMap: Record<string, string> = {
+  veg: "Vegetarian",
+  nonveg: "Non-Veg",
+  vegan: "Vegan",
+};
+const dietEmojiMap: Record<string, string> = {
+  veg: "🥗",
+  nonveg: "🍖",
+  vegan: "🌱",
+};
 
 export default function DishGrid({
   dishes,
   className = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4",
   itemClassName = "",
   hrefBuilder,
-  hasPremiumAccess = false, // 👈 truyền true nếu user đã mua premium
+  hasPremiumAccess = false,
 }: {
   dishes: DishCard[];
   className?: string;
@@ -92,9 +121,13 @@ export default function DishGrid({
   hrefBuilder?: (d: DishCard) => string;
   hasPremiumAccess?: boolean;
 }) {
-  const visible = (dishes ?? []).filter((d) => (d.review_status ?? "").toLowerCase() === "approved");
+  const visible = (dishes ?? []).filter(
+    (d) => (d.review_status ?? "").toLowerCase() === "approved"
+  );
 
-  const [upgradeOpen, setUpgradeOpen] = useState<null | { title: string }>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState<null | { title: string }>(
+    null
+  );
   const router = useRouter();
 
   return (
@@ -108,11 +141,28 @@ export default function DishGrid({
           const dietText = dietLabelMap[dietKey] || d.diet || undefined;
           const dietEmoji = dietEmojiMap[dietKey];
 
-          const isPremium = !!d.premium?.active;
+          // 🔧 Fix: Check premium properly
+          const isPremium = Boolean(d.premium && d.premium.active === true);
           const gated = isPremium && !hasPremiumAccess;
 
+          // Debug log (có thể xóa sau khi test)
+          if (d.premium) {
+            console.log(
+              "Dish:",
+              d.title,
+              "Premium:",
+              d.premium,
+              "isPremium:",
+              isPremium,
+              "gated:",
+              gated
+            );
+          }
+
           // Khi bị gate, chặn click và mở modal
-          const onCardClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+          const onCardClick: React.MouseEventHandler<HTMLAnchorElement> = (
+            e
+          ) => {
             if (gated) {
               e.preventDefault();
               e.stopPropagation();
@@ -154,8 +204,17 @@ export default function DishGrid({
                   {isPremium && (
                     <div className="absolute right-2 top-2 z-30">
                       <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-                        <svg width="12" height="12" viewBox="0 0 24 24" className="-mt-px" aria-hidden>
-                          <path fill="currentColor" d="M12 2 9.5 8h-6l5 3.6L6 18l6-4 6 4-2.5-6.4 5-3.6h-6L12 2z" />
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          className="-mt-px"
+                          aria-hidden
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M12 2 9.5 8h-6l5 3.6L6 18l6-4 6 4-2.5-6.4 5-3.6h-6L12 2z"
+                          />
                         </svg>
                         Premium
                       </span>
@@ -175,7 +234,11 @@ export default function DishGrid({
                           loop={false}
                         />
                         <div className="absolute inset-0 z-10 grid place-items-center">
-                          <VideoDialog url={d.video_url} poster={d.cover_image_url ?? getCoverUrl(d)} trigger="overlay" />
+                          <VideoDialog
+                            url={d.video_url}
+                            poster={d.cover_image_url ?? getCoverUrl(d)}
+                            trigger="overlay"
+                          />
                         </div>
                       </>
                     ) : (
@@ -206,7 +269,11 @@ export default function DishGrid({
                     {/* badge xem video (nếu có) */}
                     {d.video_url && (
                       <div className="absolute left-2 bottom-2 z-20">
-                        <VideoDialog url={d.video_url} poster={d.cover_image_url ?? getCoverUrl(d)} trigger="badge" />
+                        <VideoDialog
+                          url={d.video_url}
+                          poster={d.cover_image_url ?? getCoverUrl(d)}
+                          trigger="badge"
+                        />
                       </div>
                     )}
 
@@ -234,7 +301,7 @@ export default function DishGrid({
                       )}
                       {(dietText || isPremium) && (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] text-emerald-700">
-                          {isPremium ? "👑 Premium" : (dietEmoji ?? "🍽️")}
+                          {isPremium ? "👑 Premium" : dietEmoji ?? "🍽️"}
                           {!isPremium && <>&nbsp;{dietText}</>}
                         </span>
                       )}
@@ -250,18 +317,26 @@ export default function DishGrid({
       {/* Modal nâng cấp Premium */}
       {upgradeOpen && (
         <div className="fixed inset-0 z-[9999]">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setUpgradeOpen(null)} />
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setUpgradeOpen(null)}
+          />
           <div className="absolute inset-0 grid place-items-center p-4">
             <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
               <div className="border-b px-4 py-3">
                 <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white">👑</span>
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-white">
+                    👑
+                  </span>
                   Nâng cấp Premium
                 </h3>
               </div>
               <div className="px-4 py-3 text-sm text-gray-700">
                 <p className="mb-1 font-semibold">{upgradeOpen.title}</p>
-                <p>Món này chỉ dành cho thành viên Premium. Bạn muốn nâng cấp ngay?</p>
+                <p>
+                  Món này chỉ dành cho thành viên Premium. Bạn muốn nâng cấp
+                  ngay?
+                </p>
               </div>
               <div className="flex items-center justify-end gap-2 px-4 py-3">
                 <button

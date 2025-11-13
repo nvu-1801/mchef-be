@@ -8,10 +8,14 @@ type DishFormValues = {
   title: string;
   category_id: string | null;
   cover_image_url: string | null;
+  video_url: string | null;
   diet: string | null;
   time_minutes: number | null;
   servings: number | null;
   tips: string | null;
+  description: string | null;
+  difficulty: string | null;
+  calories: number | null;
   published: boolean;
 };
 
@@ -37,7 +41,7 @@ export default async function EditDishPage({
   const { data: dishData, error } = await sb
     .from("dishes")
     .select(
-      "id,title,category_id,cover_image_url,diet,time_minutes,servings,tips,published,created_by"
+      "id,title,category_id,cover_image_url,video_url,diet,time_minutes,servings,tips,description,difficulty,calories,published,created_by"
     )
     .eq("id", id)
     .single();
@@ -51,10 +55,14 @@ export default async function EditDishPage({
     title: dishData.title,
     category_id: dishData.category_id,
     cover_image_url: dishData.cover_image_url,
+    video_url: dishData.video_url,
     diet: dishData.diet,
     time_minutes: dishData.time_minutes,
     servings: dishData.servings,
     tips: dishData.tips,
+    description: dishData.description,
+    difficulty: dishData.difficulty,
+    calories: dishData.calories,
     published: dishData.published,
   };
 

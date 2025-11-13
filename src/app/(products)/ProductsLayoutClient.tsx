@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { User } from "@supabase/supabase-js";
 import Footer from "@/components/common/Footer";
+import { PremiumProvider } from "@/context/PremiumContext";
+import { User } from "@/types/user";
 
 const HeaderBar = dynamic(() => import("@/components/layout/HeaderBar"), {
   ssr: false,
@@ -12,76 +13,30 @@ const GlobalLoading = dynamic(
   { ssr: false }
 );
 
-// 1. Bỏ "isPremium" khỏi Props
 type ProductsLayoutClientProps = {
   children: React.ReactNode;
   user: User | null;
   isAdmin: boolean;
-  // isPremium?: boolean; // 👈 BỎ PROP NÀY
 };
 
 export default function ProductsLayoutClient({
   children,
   user,
   isAdmin,
-  // isPremium = false, // 👈 BỎ PROP NÀY
 }: ProductsLayoutClientProps) {
   return (
     <div className="min-h-dvh flex flex-col bg-white bg-[radial-gradient(45rem_45rem_at_80%_-10%,#dbeafe_10%,transparent_60%),radial-gradient(40rem_45rem_at_0%_120%,#fce7f3_10%,transparent_60%)]">
       <GlobalLoading />
-      
-      {/* 2. Bỏ "isPremium" khỏi HeaderBar */}
-      <HeaderBar 
-        isAdmin={isAdmin} 
-        user={user} 
-        // isPremium={isPremium} // 👈 BỎ PROP NÀY
-      />
-
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          {children}
-        </div>
-      </main>
+      <PremiumProvider>
+        <HeaderBar isAdmin={isAdmin} user={user} />
+        <main className="flex-1">
+          <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+            {children}
+          </div>
+        </main>
+      </PremiumProvider>
 
       <Footer />
     </div>
   );
 }
-
-// "use client";
-
-// import dynamic from "next/dynamic";
-// import Footer from "@/components/common/Footer";
-
-// const HeaderBar = dynamic(() => import("@/components/layout/HeaderBar"), {
-//   ssr: false,
-// });
-// const GlobalLoading = dynamic(
-//   () => import("@/components/common/GlobalLoading"),
-//   { ssr: false }
-// );
-
-// export default function ProductsLayoutClient({
-//   children,
-//   user,
-//   isAdmin,
-// }: {
-//   children: React.ReactNode;
-//   user: any;
-//   isAdmin: boolean;
-// }) {
-//   return (
-//     <div className="min-h-dvh flex flex-col bg-white bg-[radial-gradient(45rem_45rem_at_80%_-10%,#dbeafe_10%,transparent_60%),radial-gradient(40rem_40rem_at_0%_120%,#fce7f3_10%,transparent_60%)]">
-//       <GlobalLoading />
-//       <HeaderBar isAdmin={isAdmin} user={user} />
-
-//       <main className="flex-1">
-//         <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-//           {children}
-//         </div>
-//       </main>
-
-//       <Footer />
-//     </div>
-//   );
-// }

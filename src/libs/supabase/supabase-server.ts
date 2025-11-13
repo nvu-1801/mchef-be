@@ -11,14 +11,14 @@ import type { CookieOptions } from "@supabase/ssr";
 export async function supabaseServer() {
   const cookieStore = await cookies();
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error(
-      "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set in .env"
+      "NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set in .env"
     );
   }
 
   const client = createServerClient(
-    process.env.SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
       cookies: {

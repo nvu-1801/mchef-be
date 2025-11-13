@@ -97,26 +97,26 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
 
               {/* 👇 BƯỚC 4: Sử dụng biến "isPremium" (từ hook) */}
               {!isAdmin &&
-              (isPremium ? (
-                <span
-                  className="inline-flex items-center justify-center h-10 rounded-xl px-4
+                (isPremium ? (
+                  <span
+                    className="inline-flex items-center justify-center h-10 rounded-xl px-4
                              text-sm font-semibold text-white
                              bg-gradient-to-r from-violet-500 to-pink-500
                              transition-all duration-200 hover:shadow-lg hover:shadow-pink-500/30 hover:scale-105"
-                  title="Bạn đang ở gói Premium"
-                >
-                  Premium
-                </span>
-              ) : (
-                <Link
-                  href="/upgrade"
-                  className="inline-flex items-center justify-center h-10 rounded-xl px-3
+                    title="Bạn đang ở gói Premium"
+                  >
+                    Premium
+                  </span>
+                ) : (
+                  <Link
+                    href="/upgrade"
+                    className="inline-flex items-center justify-center h-10 rounded-xl px-3
                              border border-gray-200 text-sm font-semibold text-gray-800
                              hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
-                >
-                  Upgrade
-                </Link>
-              ))}
+                  >
+                    Upgrade
+                  </Link>
+                ))}
               {/* 👆 Logic đã sử dụng hook 👆 */}
 
               <Link
@@ -126,6 +126,16 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                            focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
                 My Posts
+              </Link>
+
+              {/* Orders / Checkout */}
+              <Link
+                href="/checkout/orders"
+                className="inline-flex items-center justify-center h-10 rounded-xl px-3
+                           border border-gray-200 text-sm text-gray-700 hover:bg-gray-50
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Orders
               </Link>
 
               <AdminDropdown isAdmin={isAdmin} />
@@ -294,6 +304,17 @@ export default function HeaderBar({ isAdmin, user, isChef = false }: Props) {
                            focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
                 My Posts
+              </Link>
+
+              {/* Mobile Orders button */}
+              <Link
+                href="/checkout/orders"
+                onClick={() => setOpen(false)}
+                className="flex-1 inline-flex items-center justify-center h-10 rounded-xl
+                           border border-gray-200 text-sm font-semibold text-gray-800 hover:bg-gray-50
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+              >
+                Orders
               </Link>
             </div>
 

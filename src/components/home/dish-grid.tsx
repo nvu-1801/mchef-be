@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { dishImageUrl } from "@/modules/dishes/lib/image-url";
 import VideoDialog from "@/components/common/VideoDialog";
 import { SmartVideo } from "@/components/common/SmartVideo";
+import { useUserPlan } from "@/hooks/useUserPlan"; // 👈 import hook
+import { usePremium } from "@/context/PremiumContext";
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
@@ -113,14 +115,38 @@ export default function DishGrid({
   className = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4",
   itemClassName = "",
   hrefBuilder,
-  hasPremiumAccess = false,
+  hasPremiumAccess = undefined,
 }: {
   dishes: DishCard[];
   className?: string;
   itemClassName?: string;
   hrefBuilder?: (d: DishCard) => string;
-  hasPremiumAccess?: boolean;
+  hasPremiumAccess?: boolean | undefined;
 }) {
+  // prefer explicit prop > context > local hook
+  const contextPremium = usePremium();
+  const { plan } = useUserPlan();
+
+  // Replace precedence: if contextPremium === true => unlock always.
+  // Otherwise fall back to explicit prop, then plan.
+  const resolvedHasPremiumAccess =
+    contextPremium === true
+      ? true
+      : typeof hasPremiumAccess === "boolean"
+      ? hasPremiumAccess
+      : !!plan?.is_premium;
+
+  // debug top-level
+  console.log(
+    "[DishGrid] resolvedHasPremiumAccess:",
+    resolvedHasPremiumAccess,
+    {
+      prop: hasPremiumAccess,
+      contextPremium,
+      plan: plan ?? null,
+    }
+  );
+
   const visible = (dishes ?? []).filter(
     (d) => (d.review_status ?? "").toLowerCase() === "approved"
   );
@@ -141,23 +167,35 @@ export default function DishGrid({
           const dietText = dietLabelMap[dietKey] || d.diet || undefined;
           const dietEmoji = dietEmojiMap[dietKey];
 
-          // 🔧 Fix: Check premium properly
-          const isPremium = Boolean(d.premium && d.premium.active === true);
-          const gated = isPremium && !hasPremiumAccess;
+          // Normalize premium shape (array vs object) and fallback flat fields
+          const rawPremium =
+            (d as any).premium ?? (d as any).premium_data ?? null;
+          const premiumObj = Array.isArray(rawPremium)
+            ? rawPremium[0]
+            : rawPremium;
 
-          // Debug log (có thể xóa sau khi test)
-          if (d.premium) {
-            console.log(
-              "Dish:",
-              d.title,
-              "Premium:",
-              d.premium,
-              "isPremium:",
-              isPremium,
-              "gated:",
-              gated
-            );
-          }
+          // support different active value types
+          const activeValue = premiumObj?.active ?? (d as any).premium_active;
+          const isPremium =
+            Boolean(activeValue) ||
+            activeValue === "true" ||
+            activeValue === "t" ||
+            activeValue === "1" ||
+            activeValue === 1;
+
+          const gated = isPremium && !resolvedHasPremiumAccess;
+
+          // detailed per-item debug
+          console.log("[DishGrid:item]", {
+            title: d.title,
+            slug: d.slug,
+            rawPremium,
+            premiumObj,
+            activeValue,
+            isPremium,
+            gated,
+            resolvedHasPremiumAccess,
+          });
 
           // Khi bị gate, chặn click và mở modal
           const onCardClick: React.MouseEventHandler<HTMLAnchorElement> = (

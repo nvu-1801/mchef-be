@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/libs/supabase/supabase-server";
-import { createHash } from "crypto";
+import { generateUserApiKey } from "@/libs/auth/verify-user-api-key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,14 +31,6 @@ export async function GET(request: Request) {
       .eq("id", user.id)
       .single();
 
-    // Nếu muốn restrict chỉ cho chef/admin
-    // if (!profile?.can_post && profile?.role !== "admin") {
-    //   return NextResponse.json(
-    //     { error: "Forbidden: Not a chef" },
-    //     { status: 403 }
-    //   );
-    // }
-
     // Tạo API key động dựa trên user ID + secret
     const apiKey = generateUserApiKey(user.id);
 
@@ -56,23 +48,6 @@ export async function GET(request: Request) {
   }
 }
 
-/**
- * Tạo API key cho từng user
- * Format: hash(userId + SECRET)
- */
-function generateUserApiKey(userId: string): string {
-  const secret = process.env.INTERNAL_API_KEY || "fallback-secret";
-  const timestamp = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // Reset mỗi ngày
-
-  return createHash("sha256")
-    .update(`${userId}:${secret}:${timestamp}`)
-    .digest("hex")
-    .substring(0, 32);
-}
-
-/**
- * Verify API key từ user
- */
 export function verifyUserApiKey(apiKey: string, userId: string): boolean {
   const expected = generateUserApiKey(userId);
   return apiKey === expected;
